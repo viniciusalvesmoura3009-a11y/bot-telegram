@@ -1,0 +1,704 @@
+from flask import Flask
+from threading import Thread
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Bot online!"
+
+def run():
+    app.run(host="0.0.0.0", port=8080)
+
+Thread(target=run).start()
+
+import os
+from datetime import datetime
+import requests
+import asyncio
+from telegram import Update, ChatPermissions
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
+
+FRIFAS_KEY = "71373c8b-ab27-a581-39d9-1d586063d63a"
+BASE_URL = "https://fluxdevservice.com/api/frifas"
+DONO_ID = 7895922394
+USUARIOS_LIKES = set()
+USUARIOS_AUTO = set()
+USUARIOS_BIO = set()
+cadastros = {}
+import os as _os
+def load_auto():
+    if _os.path.exists("auto.json"):
+        import json as _json
+        return _json.load(open("auto.json"))
+    return {}
+def save_auto(d):
+    import json as _json
+    _json.dump(d, open("auto.json", "w"))
+uids_auto = load_auto()
+
+PETS = {
+    1300000001: "Sensei Tig", 1300000002: "Shiba", 1300000003: "Falco",
+    1300000004: "Beaston", 1300000005: "Dreki", 1300000006: "Rockie",
+    1300000007: "Detective Panda", 1300000008: "Ottero", 1300000009: "Night Panther",
+    1300000010: "Spirit Fox", 1300000011: "Mechanical Pup", 1300000012: "Moony",
+    1300000013: "Kitty", 1300000017: "Luqueta", 1300000018: "Mr. Waggor", 1300000021: "Panda", 1300000022: "Phantom Bear", 1300000023: "Woodpecker", 1300000024: "Nargacuga", 1300000025: "Skelcho", 1300000028: "Falco", 1300000029: "Leaomar", 1300000030: "Ferret", 1300000031: "Happy Panda", 1300000032: "Panda Negro", 1300000033: "Toto", 1300000034: "Boo", 1300000035: "Bunny", 1300000036: "Hedgehog", 1300000037: "Penguin", 1300000038: "Snowball", 1300000050: "Tiger", 1300000122: "Corujita",
+    1300000021: "Panda", 1300000022: "Phantom Bear", 1300000023: "Woodpecker",
+    1300000024: "Nargacuga", 1300000025: "Skelcho", 1300000028: "Falco",
+    1300000100: "Grim Reaper", 1300000125: "Poring",
+}
+
+
+
+import requests as _req
+import json as _json
+
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "SEU_TOKEN_AQUI")
+GIST_ID = None
+GIST_FILENAME = "usos_bot.json"
+
+def _gh():
+    return {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+
+def _gist():
+    global GIST_ID
+    if GIST_ID: return GIST_ID
+    r = _req.get("https://api.github.com/gists", headers=_gh()).json()
+    for g in r:
+        if GIST_FILENAME in g["files"]:
+            GIST_ID = g["id"]; return GIST_ID
+    r = _req.post("https://api.github.com/gists", headers=_gh(), json={"description":"usos","public":False,"files":{GIST_FILENAME:{"content":"{}"}}}).json()
+    GIST_ID = r["id"]; return GIST_ID
+
+def load_usos():
+    try:
+        r = _req.get(f"https://api.github.com/gists/{_gist()}", headers=_gh()).json()
+        return _json.loads(r["files"][GIST_FILENAME]["content"])
+    except: return {}
+
+def save_usos(d):
+    try: _req.patch(f"https://api.github.com/gists/{_gist()}", headers=_gh(), json={"files":{GIST_FILENAME:{"content":_json.dumps(d)}}})
+    except: pass
+
+
+LIMITE_DIARIO = 100
+
+
+
+def contar_uso(user_id):
+    from datetime import datetime as _dt
+    usos = load_usos()
+    uid = str(user_id)
+    hoje = _dt.now().strftime("%Y-%m-%d")
+    print(f"[CONTAR_USO] uid={uid} hoje={hoje} usos_antes={usos.get(uid)}")
+    if uid not in usos or usos[uid].get("data") != hoje:
+        usos[uid] = {"data": hoje, "qtd": 0}
+    usos[uid]["qtd"] += 1
+    save_usos(usos)
+    print(f"[CONTAR_USO] uid={uid} qtd_depois={usos[uid]['qtd']} USOS_FILE={USOS_FILE}")
+    return usos[uid]["qtd"]
+
+def total_geral_hoje():
+    from datetime import datetime as _dt
+    usos = load_usos()
+    hoje = _dt.now().strftime("%Y-%m-%d")
+    total = 0
+    for uid, d in usos.items():
+        if d.get("data") == hoje:
+            total += d.get("qtd", 0)
+    return total
+
+async def meususos(update, context):
+    from datetime import datetime as _dt
+    usos = load_usos()
+    uid = str(update.message.from_user.id)
+    hoje = _dt.now().strftime("%Y-%m-%d")
+    qtd = usos.get(uid, {}).get("qtd", 0) if usos.get(uid, {}).get("data") == hoje else 0
+    await update.message.reply_text(f"📊 Seus usos hoje: {qtd}/{LIMITE_DIARIO}")
+
+async def usosgeral(update, context):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ Apenas o dono pode usar este comando.")
+        return
+    total = total_geral_hoje()
+    await update.message.reply_text(f"📊 Total geral de usos hoje: {total}")
+
+async def send_likes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        valido, restantes, motivo = checar_vip(str(update.message.from_user.id))
+        if not valido:
+            if motivo == "limite":
+                await update.message.reply_text("⛔ Limite diário atingido!\n\nVocê já usou todos os seus IDs disponíveis hoje. Volte amanhã para usar novamente.")
+            else:
+                await update.message.reply_text("❌ Seu VIP expirou!\n\nEntre em contato com o dono para renovar.\n📞 (82) 98863-1900 WhatsApp")
+            return
+    if not context.args:
+        await update.message.reply_text("Uso: /likes <uid>")
+        return
+    uid = context.args[0]
+    resp = requests.get(f"{BASE_URL}/sendlikes", params={"key": FRIFAS_KEY, "id": uid})
+    data = resp.json()
+    if data.get("success") or data.get("sucesso"):
+        d = data["data"][0]
+        qtd_uso = contar_uso(update.message.from_user.id)
+        if update.message.from_user.id != DONO_ID:
+            incrementar_uso_vip(str(update.message.from_user.id))
+        msg = (
+"╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n"
+"│  👍 LIKES ENVIADOS  —  REBELDE – FF\n"
+"╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n"
+"│  👤 Jogador: " + str(d["conta"]["nome_conta"]) + "\n"
+"│  🆔 UID: " + str(d["conta"]["id_conta"]) + "\n"
+"│  📈 Antes: " + str(d["likes"]["antes"]) + "\n"
+"│  🚀 Enviados: " + str(d["likes"]["enviadas"]) + "\n"
+"│  ✅ Depois: " + str(d["likes"]["depois"]) + "\n\n"
+
+"🔱 Dono: ༒REBELDE ༒VENDAS"
+)
+        await update.message.reply_text(msg)
+    else:
+        msg_erro = data.get("message", "Erro desconhecido")
+        if "REQUEST_BLOCKED" in str(msg_erro) or "blocked" in str(msg_erro).lower():
+            await update.message.reply_text("⛔ Limite diário atingido!\n\nOs likes serão enviados amanhã quando a cota resetar. Aguarde!")
+        else:
+            await update.message.reply_text("Falha no envio de likes\n\nMensagem: " + str(msg_erro) + "\n\nTente novamente mais tarde.")
+
+async def update_bio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID and update.message.from_user.id not in USUARIOS_BIO:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not context.args or len(context.args) < 2:
+        await update.message.reply_text("Uso: /bio <token> <nova_bio>")
+        return
+    token = context.args[0]
+    bio = " ".join(context.args[1:])
+    resp = requests.get(f"{BASE_URL}/update-bio/account", params={"key": FRIFAS_KEY, "eat_token": token, "newbio": bio})
+    try:
+        data = resp.json()
+        print("DEBUG BIO DATA:", data)
+    except:
+        await update.message.reply_text("API fora do ar!")
+        return
+    if data.get("sucesso"):
+        d = data["dados"][0]
+        bio_antiga = d["assinatura"]["bio_antiga"]
+        bio_nova = d["assinatura"]["bio_nova"]
+        conta = d.get("conta", {})
+        nick = conta.get("nome_conta", "?")
+        uid = conta.get("id_conta", "?")
+        regiao = conta.get("regiao", "BR")
+        data_hoje = datetime.now().strftime("%d/%m/%Y")
+        msg = (
+            "✅ Bio Alterada com Sucesso!\n\n"
+            "👤 Nick: " + str(nick) + "\n"
+            "🆔 ID: " + str(uid) + "\n"
+            "🌎 Região: " + str(regiao) + "\n\n"
+            "📜 Bio Antiga:\n" + bio_antiga + "\n\n"
+            "✨ Nova Bio:\n" + bio_nova + "\n\n"
+            "🔱 Dono: ༒REBELDE ༒VENDAS"
+        )
+        await update.message.reply_text(msg)
+    else:
+        await update.message.reply_text("Erro: " + str(data.get("mensagem", "desconhecido")))
+
+async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Uso: /cadastrar <uid_freefire>")
+        return
+    uid = context.args[0]
+    resp = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": uid})
+    try:
+        data = resp.json()
+    except:
+        await update.message.reply_text("API fora do ar!")
+        return
+    if data.get("success") or data.get("sucesso"):
+        d = data["data"][0]["conta"]
+        nick = d.get("nome_conta", "?")
+        cadastros[update.message.from_user.id] = {"uid": uid, "nick": nick}
+        await update.message.reply_text("Cadastro realizado!\n\nNick: " + nick + "\nUID: " + uid)
+    else:
+        await update.message.reply_text("UID invalido!")
+
+async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Uso: /info <uid>")
+        return
+    uid = context.args[0]
+    resp = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": uid})
+    try:
+        data = resp.json()
+    except:
+        await update.message.reply_text("API fora do ar!")
+        return
+    if data.get("success") or data.get("sucesso"):
+        d = data["data"][0]["conta"]
+        pet_id_raw = d.get("pet", {}).get("id", None)
+        pet_nome = PETS.get(pet_id_raw, "Pet ID: " + str(pet_id_raw)) if pet_id_raw else "Sem pet"
+        pet_level = d.get("pet", {}).get("level", "?")
+        pet_xp = d.get("pet", {}).get("experiencia", "?")
+        pet_skin = d.get("pet", {}).get("skin_id", "Sem skin")
+        pet_habilidade = d.get("pet", {}).get("habilidade_id", "Sem habilidade")
+        roupas = d.get("perfil", {}).get("roupas", [])
+        cla = d.get("cla", {})
+        rank_br = d.get("rank_br", {})
+        rank_cs = d.get("rank_cs", {})
+        social = d.get("informacoes_sociais", {})
+        msg = (
+            "📊 INFORMACOES DO JOGADOR\n\n"
+            "👤 Nick: " + str(d.get("nome_conta", "?")) + "\n"
+            "🆔 ID: " + str(d.get("id_conta", "?")) + "\n"
+            "📈 Level: " + str(d.get("level", "?")) + "\n"
+            "⭐ XP: " + ("{:,}".format(int(d.get("experiencia", 0))) if str(d.get("experiencia","?")).isdigit() else str(d.get("experiencia","?"))) + "\n"
+            "❤️ Likes: " + ("{:,}".format(int(d.get("likes", 0))) if str(d.get("likes","?")).isdigit() else str(d.get("likes","?"))) + "\n"
+            "🌎 Regiao: " + str(d.get("region", "?")) + "\n" + "👑 Prime Level: " + str(d.get("prime_level", "0")) + "\n" + "🎮 Versão do jogo: " + str(d.get("release_version", "?")) + "\n\n"
+            "🐾 Pet: " + str(pet_nome) + "\n"
+            "🐾 Pet Level: " + str(pet_level) + "\n"
+            "🐾 Pet XP: " + str(pet_xp) + "\n\n"
+            "👕 Total de Roupas: " + str(len(roupas)) + "\n\n"
+            "🏰 Cla: " + str(cla.get("nome", "Sem cla")) + "\n"
+            "🏰 Level do Cla: " + str(cla.get("level", "?")) + "\n"
+            "🏰 Membros: " + str(cla.get("membros", "?")) + "\n"
+            "👑 Capitao: " + str(cla.get("capitao_nome", "?")) + "\n\n"
+            "🎖️ Rank BR: " + str(rank_br.get("pontos", "?")) + " pts\n"
+            "🎖️ Rank CS: " + str(rank_cs.get("pontos", "?")) + " pts\n"
+            "🏅 Badges: " + str(d.get("badge", {}).get("quantidade", "?")) + "\n"
+            "⭐ Credibilidade: " + str(d.get("credibilidade", "?")) + "\n\n"
+            "📅 Criado em: " + str(d.get("criado_em", "?")) + "\n"
+            "🕐 Ultimo login: " + str(d.get("ultimo_login", "?")) + "\n\n"
+            "📜 Bio: " + str(social.get("assinatura", "Sem bio"))
+        )
+        await update.message.reply_text(msg)
+    else:
+        await update.message.reply_text("UID invalido!")
+
+async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID and update.message.from_user.id not in USUARIOS_AUTO:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /autolike <uid>")
+        return
+    uid = context.args[0]
+    uids_auto[uid] = update.message.chat_id
+    save_auto(uids_auto)
+    resp = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": uid})
+    try:
+        d = resp.json()
+        nick = d["data"][0]["conta"]["nome_conta"] if resp.status_code == 200 and d.get("success") else uid
+    except:
+        nick = uid
+    await update.message.reply_text("✅ Auto like ativado!\n👤 Nick: " + str(nick) + "\n🆔 UID: " + str(uid) + "\n✨ Enviando todos os dias. 👍")
+    try:
+        resp2 = requests.get(f"{BASE_URL}/sendlikes", params={"key": FRIFAS_KEY, "id": uid})
+        data2 = resp2.json()
+        if data2.get("success") or data2.get("sucesso"):
+            d2 = data2["data"][0]
+            msg2 = "🎯 PRIMEIRO ENVIO IMEDIATO\n\n📈 Antes: " + str(d2["likes"]["antes"]) + " -> 🚀 Depois: " + str(d2["likes"]["depois"])
+            await update.message.reply_text(msg2)
+        else:
+            await update.message.reply_text("⚠️ Primeiro envio imediato falhou: " + str(data2.get("message", data2.get("mensagem", "erro desconhecido"))) + "\n\nO autolike continua ativo e tentará no próximo ciclo.")
+    except Exception as e:
+        print(f"[AUTOLIKE IMEDIATO] Erro ao enviar like para {uid}: {e}")
+        await update.message.reply_text("⚠️ Não foi possível confirmar o envio imediato, mas o autolike está ativo.")
+async def stop_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Uso: /stopauto <uid>")
+        return
+    uid = context.args[0]
+    uids_auto.pop(uid, None)
+    save_auto(uids_auto)
+    await update.message.reply_text("🗑️ AUTOLIKE REMOVIDO\n\n🆔 UID: " + str(uid) + "\n🚫 Auto like desativado.")
+
+async def autolike_loop(app):
+    while True:
+        for uid, chat_id in list(uids_auto.items()):
+            try:
+                resp = requests.get(f"{BASE_URL}/sendlikes", params={"key": FRIFAS_KEY, "id": uid})
+                data = resp.json()
+                if data.get("success") or data.get("sucesso"):
+                    d = data["data"][0]
+                    nick = d["conta"]["nome_conta"]
+                    msg = (
+"✅ AUTO LIKE ENVIADO\n\n"
+"|  👤 Jogador: " + str(nick) + "\n"
+"|  🆔 UID: " + str(uid) + "\n"
+"|  📈 Antes: " + str(d["likes"]["antes"]) + " -> 🚀 Depois: " + str(d["likes"]["depois"]) + "\n\n"
+"🔱 Dono: ༒REBELDE ༒VENDAS"
+)
+                    await app.bot.send_message(chat_id=chat_id, text=msg)
+            except Exception as e:
+                print(f"[AUTOLIKE LOOP] Erro ao processar UID {uid}: {e}")
+        await asyncio.sleep(86400)
+
+async def addlikes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /addlikes <id_telegram>")
+        return
+    USUARIOS_LIKES.add(int(context.args[0]))
+    await update.message.reply_text("Usuario " + context.args[0] + " pode usar /likes agora!")
+
+async def removelikes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removelikes <id_telegram>")
+        return
+    USUARIOS_LIKES.discard(int(context.args[0]))
+    await update.message.reply_text("Usuario " + context.args[0] + " removido!")
+
+async def addautolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /addautolike <id_telegram>")
+        return
+    tid = int(context.args[0])
+    USUARIOS_AUTO.add(tid)
+    if tid in cadastros:
+        nick = cadastros[tid]["nick"]
+        uid = cadastros[tid]["uid"]
+        msg = "AUTO LIKE ATIVADO\n\nID Telegram: " + str(tid) + "\nNick: " + nick + "\nUID: " + uid
+    else:
+        msg = "AUTO LIKE ATIVADO\n\nID Telegram: " + str(tid) + "\n(Usuario nao cadastrado)"
+    await update.message.reply_text(msg)
+
+async def removeautolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removeautolike <id_telegram>")
+        return
+    USUARIOS_AUTO.discard(int(context.args[0]))
+    await update.message.reply_text("🗑️ AUTOLIKE REMOVIDO\n\n🆔 UID: " + str(context.args[0]) + "\n🚫 Auto like desativado.")
+
+async def addbio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /addbio <id_telegram>")
+        return
+    USUARIOS_BIO.add(int(context.args[0]))
+    await update.message.reply_text("Usuario " + context.args[0] + " pode usar /bio agora!")
+
+async def removebio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removebio <id_telegram>")
+        return
+    USUARIOS_BIO.discard(int(context.args[0]))
+    await update.message.reply_text("Usuario " + context.args[0] + " removido!")
+
+async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await mostrar_pagina_menu(update, context, 1)
+
+async def mostrar_pagina_menu(update, context, pagina):
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    paginas = {
+        1: {
+            "titulo": "📋 *Menu — Página 1/2*\n👤 *Comandos do Usuário:*",
+            "botoes": [
+                ("👍 /likes", "cmd_likes"),
+                ("🔄 /autolike", "cmd_autolike"),
+                ("⏹ /stopauto", "cmd_stopauto"),
+                ("📝 /bio", "cmd_bio"),
+                ("📋 /cadastrar", "cmd_cadastrar"),
+                ("📊 /info", "cmd_info"),
+                ("🆔 /meuid", "cmd_meuid"),
+                ("📈 /meususos", "cmd_meususos"),
+            ]
+        },
+        2: {
+            "titulo": "📋 *Menu — Página 2/2*\n👑 *Comandos Admin:*",
+            "botoes": [
+                ("➕ /addvip", "cmd_addvip"),
+                ("➖ /removevip", "cmd_removevip"),
+                ("📋 /listvip", "cmd_listvip"),
+                ("🔄 /addautolike", "cmd_addautolike"),
+                ("⏹ /removeautolike", "cmd_removeautolike"),
+                ("🚫 /ban", "cmd_ban"),
+                ("🔒 /fechgrupo", "cmd_fechgrupo"),
+                ("🔓 /abrgrupo", "cmd_abrgrupo"),
+            ]
+        }
+    }
+    p = paginas[pagina]
+    keyboard = []
+    botoes = p["botoes"]
+    for j in range(0, len(botoes), 2):
+        row = [InlineKeyboardButton(botoes[j][0], callback_data=botoes[j][1])]
+        if j+1 < len(botoes):
+            row.append(InlineKeyboardButton(botoes[j+1][0], callback_data=botoes[j+1][1]))
+        keyboard.append(row)
+    nav = []
+    if pagina > 1:
+        nav.append(InlineKeyboardButton("⬅️ Anterior", callback_data=f"menu_{pagina-1}"))
+    if pagina < len(paginas):
+        nav.append(InlineKeyboardButton("Próximo ➡️", callback_data=f"menu_{pagina+1}"))
+    if nav:
+        keyboard.append(nav)
+    markup = InlineKeyboardMarkup(keyboard)
+    if hasattr(update, "callback_query") and update.callback_query:
+        await update.callback_query.edit_message_text(p["titulo"], parse_mode="Markdown", reply_markup=markup)
+    else:
+        await update.message.reply_text(p["titulo"], parse_mode="Markdown", reply_markup=markup)
+
+async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+    descricoes = {
+        "cmd_likes": ("👍 /likes", "Envia likes para um jogador.\n\nComo usar:\n/likes <uid>\n\nExemplo:\n/likes 2031944584"),
+        "cmd_autolike": ("🔄 /autolike", "Ativa o autolike diário.\n\nComo usar:\n/autolike <uid>\n\nExemplo:\n/autolike 2031944584"),
+        "cmd_stopauto": ("⏹ /stopauto", "Para o autolike de um UID.\n\nComo usar:\n/stopauto <uid>\n\nExemplo:\n/stopauto 2031944584"),
+        "cmd_bio": ("📝 /bio", "Muda a bio da conta.\n\nComo usar:\n/bio <token> <nova bio>"),
+        "cmd_cadastrar": ("📋 /cadastrar", "Cadastra um UID.\n\nComo usar:\n/cadastrar <uid>"),
+        "cmd_info": ("📊 /info", "Info do jogador.\n\nComo usar:\n/info <uid>"),
+        "cmd_meuid": ("🆔 /meuid", "Mostra seu ID do Telegram.\n\nComo usar:\n/meuid"),
+        "cmd_meususos": ("📈 /meususos", "Mostra seus usos de hoje.\n\nComo usar:\n/meususos"),
+        "cmd_addvip": ("➕ /addvip", "Adiciona um VIP.\n\nComo usar:\n/addvip <dias> <usos> <uid> <nome>"),
+        "cmd_removevip": ("➖ /removevip", "Remove um VIP.\n\nComo usar:\n/removevip <uid>"),
+        "cmd_listvip": ("📋 /listvip", "Lista todos os VIPs.\n\nComo usar:\n/listvip"),
+        "cmd_addautolike": ("🔄 /addautolike", "Adiciona autolike admin.\n\nComo usar:\n/addautolike <id>"),
+        "cmd_removeautolike": ("⏹ /removeautolike", "Remove autolike admin.\n\nComo usar:\n/removeautolike <id>"),
+        "cmd_ban": ("🚫 /ban", "Bane um usuário.\n\nComo usar:\nResponda a mensagem com /ban"),
+        "cmd_fechgrupo": ("🔒 /fechgrupo", "Fecha o grupo.\n\nComo usar:\n/fechgrupo"),
+        "cmd_abrgrupo": ("🔓 /abrgrupo", "Abre o grupo.\n\nComo usar:\n/abrgrupo"),
+    }
+    if data.startswith("menu_"):
+        pagina = int(data.split("_")[1])
+        await mostrar_pagina_menu(update, context, pagina)
+        return
+    if data in descricoes:
+        titulo, desc = descricoes[data]
+        keyboard = [[InlineKeyboardButton("⬅️ Voltar ao Menu", callback_data="menu_1")]]
+        markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(f"*{titulo}*\n\n{desc}", parse_mode="Markdown", reply_markup=markup)
+
+async def boas_vindas(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    for membro in update.message.new_chat_members:
+        nome = membro.first_name
+        msg = "Bem vindo(a) ao REBELDE VENDAS!\n\nNome: " + str(nome) + "\n\nRegras:\n- Respeite todos os membros\n- Sem spam ou flood\n- Duvidas use os comandos do bot\n\nComandos: /menu"
+        await update.message.reply_text(msg)
+
+
+async def ban(update, context):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Responda a mensagem de alguem para banir!")
+        return
+    user = update.message.reply_to_message.from_user
+    await update.message.chat.ban_member(user.id)
+    await update.message.reply_text("✅ VIP adicionado!\n👤 Nome: " + str(context.args[3] if len(context.args) > 3 else "Desconhecido") + "\n🆔 UID: " + str(uid) + "\n✨ Enviando todos os dias. 👍")
+async def anti_link(update, context):
+    msg = update.message
+    if msg and msg.text:
+        import re
+        if re.search(r"(https?://|t.me/|www.)", msg.text):
+            user = msg.from_user
+            await msg.chat.ban_member(user.id)
+            await msg.delete()
+            await context.bot.send_message(msg.chat.id, f"Usuario @{user.username or user.first_name} mandou um link sem autorizacao ⚠️")
+
+import sys
+print("Iniciando bot...", flush=True)
+token = os.environ.get("BOT_TOKEN", "")
+print(f"Token: {token[:10]}...", flush=True)
+
+async def fechar_grupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🔄 Iniciando fechamento...")
+    try:
+        member = await context.bot.get_chat_member(update.message.chat_id, update.message.from_user.id)
+        if member.status not in ['administrator', 'creator']:
+            await update.message.reply_text("❌ Apenas administradores podem usar este comando.")
+            return
+        perms = ChatPermissions(can_send_messages=False)
+        await context.bot.set_chat_permissions(update.message.chat_id, perms)
+        await update.message.reply_text("🔒 Grupo fechado!")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {e}")
+    perms = ChatPermissions(
+        can_send_messages=False,
+        can_send_media_messages=False,
+        can_send_polls=False,
+        can_send_other_messages=False,
+        can_add_web_page_previews=False
+    )
+    await context.bot.set_chat_permissions(update.message.chat_id, perms)
+    await update.message.reply_text("🔒 *GRUPO FECHADO:* ordem programada e executada.", parse_mode="Markdown")
+
+async def abrir_grupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    member = await context.bot.get_chat_member(update.message.chat_id, update.message.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await update.message.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    perms = ChatPermissions(
+        can_send_messages=True,
+        can_send_polls=True,
+        can_send_other_messages=True,
+        can_add_web_page_previews=True
+    )
+    await context.bot.set_chat_permissions(update.message.chat_id, perms)
+    await update.message.reply_text("✅ *GRUPO ABERTO:* Agora todos os membros podem enviar mensagens.", parse_mode="Markdown")
+token = "8833940996:AAFX_gU52MFUFAeSuxuakYsFxu8Eo9tsf0I"
+
+async def meu_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.message.from_user.id
+    await update.message.reply_text("✅ Seu ID do Telegram\n🆔: <" + str(uid) + ">")
+
+app = ApplicationBuilder().token(token).build()
+
+async def post_init(application):
+    asyncio.create_task(autolike_loop(application))
+
+app.post_init = post_init
+app.add_handler(CommandHandler("likes", send_likes))
+app.add_handler(CommandHandler("bio", update_bio))
+app.add_handler(CommandHandler("cadastrar", cadastrar))
+app.add_handler(CommandHandler("info", info_player))
+app.add_handler(CommandHandler("autolike", start_autolike))
+app.add_handler(CommandHandler("stopauto", stop_autolike))
+app.add_handler(CommandHandler("addlikes", addlikes))
+app.add_handler(CommandHandler("removelikes", removelikes))
+app.add_handler(CommandHandler("addautolike", addautolike))
+app.add_handler(CommandHandler("removeautolike", removeautolike))
+app.add_handler(CommandHandler("addbio", addbio))
+app.add_handler(CommandHandler("removebio", removebio))
+app.add_handler(CommandHandler("menu", menu))
+app.add_handler(CallbackQueryHandler(menu_callback))
+app.add_handler(CommandHandler("ban", ban))
+
+import json
+from datetime import datetime, timedelta
+
+JSONBIN_KEY = "$2a$10$2zUobgrptNlTik8VoI2BhuWqDxXp/L9WwS1tOLHdSF5Wmo7wss2XS"
+JSONBIN_ID = "6a308646da38895dfec6a1b9"
+JSONBIN_URL = f"https://api.jsonbin.io/v3/b/{JSONBIN_ID}"
+JSONBIN_HEADERS = {"X-Master-Key": JSONBIN_KEY, "Content-Type": "application/json"}
+
+def load_vips():
+    try:
+        r = requests.get(JSONBIN_URL + "/latest", headers=JSONBIN_HEADERS)
+        return r.json().get("record", {}).get("vips", {})
+    except:
+        return {}
+
+def save_vips(vips):
+    try:
+        r = requests.get(JSONBIN_URL + "/latest", headers=JSONBIN_HEADERS)
+        data = r.json().get("record", {})
+        data["vips"] = vips
+        requests.put(JSONBIN_URL, headers=JSONBIN_HEADERS, json=data)
+    except:
+        pass
+
+async def addvip(update, context):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if len(context.args) < 3:
+        await update.message.reply_text("Uso: /addvip <dias> <usos_por_dia> <id_usuario>")
+        return
+    dias = int(context.args[0])
+    usos = int(context.args[1])
+    uid = str(context.args[2])
+    vips = load_vips()
+    vips[uid] = {
+            "nome": context.args[3] if len(context.args) > 3 else "Desconhecido",
+            "data_inicio": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "expira": (datetime.now() + timedelta(days=dias)).strftime("%Y-%m-%d %H:%M:%S"),
+        "usos_por_dia": usos,
+        "usos_hoje": 0,
+        "ultimo_reset": datetime.now().strftime("%Y-%m-%d")
+    }
+    save_vips(vips)
+    await update.message.reply_text("👑 VIP ATIVO\n\n👤 " + str(context.args[3] if len(context.args) > 3 else "Desconhecido") + "\n🆔 " + str(uid) + "\n📅 Inicio: " + datetime.now().strftime("%d/%m/%Y") + "  Expira: " + (datetime.now() + timedelta(days=dias)).strftime("%d/%m/%Y") + "\n🔄 Usos/dia: " + str(usos))
+async def removevip(update, context):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removevip <id_usuario>")
+        return
+    uid = str(context.args[0])
+    vips = load_vips()
+    if uid in vips:
+        del vips[uid]
+        save_vips(vips)
+        await update.message.reply_text("🗑️ VIP REMOVIDO\n\n🆔 UID: " + str(uid) + "\n🚫 vip desativado.")
+    else:
+        await update.message.reply_text("Usuário não encontrado no VIP!")
+
+async def listvip(update, context):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
+        return
+    vips = load_vips()
+    if not vips:
+        await update.message.reply_text("Nenhum VIP ativo!")
+        return
+    msgs = []
+    msg = "👑 VIPs ATIVOS:\n\n"
+    for uid, data in vips.items():
+        linha = f"👤 {data.get('nome', 'Desconhecido')}\n🆔 {uid}\n📅 Inicio: {data.get('data_inicio', '-')}  Expira: {data['expira']}\n🔄 Usos/dia: {data['usos_por_dia']}\n\n"
+        if len(msg) + len(linha) > 3500:
+            msgs.append(msg)
+            msg = "👑 VIPs ATIVOS (continuação):\n\n"
+        msg += linha
+    msgs.append(msg)
+    for m in msgs:
+        await update.message.reply_text(m)
+
+app.add_handler(CommandHandler("addvip", addvip))
+app.add_handler(CommandHandler("removevip", removevip))
+app.add_handler(CommandHandler("listvip", listvip))
+app.add_handler(CommandHandler("meususos", meususos))
+app.add_handler(CommandHandler("usosgeral", usosgeral))
+def checar_vip(uid):
+    vips = load_vips()
+    uid = str(uid)
+    if uid not in vips:
+        return False, 0, "sem_vip"
+    v = vips[uid]
+    if datetime.now() > datetime.strptime(v["expira"], "%Y-%m-%d %H:%M:%S"):
+        del vips[uid]
+        save_vips(vips)
+        return False, 0, "expirado"
+    hoje = datetime.now().strftime("%Y-%m-%d")
+    if v["ultimo_reset"] != hoje:
+        v["usos_hoje"] = 0
+        v["ultimo_reset"] = hoje
+        save_vips(vips)
+    if v["usos_hoje"] >= v["usos_por_dia"]:
+        return False, 0, "limite"
+    return True, v["usos_por_dia"] - v["usos_hoje"], "ok"
+
+def incrementar_uso_vip(uid):
+    vips = load_vips()
+    uid = str(uid)
+    if uid in vips:
+        vips[uid]["usos_hoje"] = vips[uid].get("usos_hoje", 0) + 1
+        save_vips(vips)
+app.add_handler(CommandHandler("abrgrupo", abrir_grupo))
+app.add_handler(CommandHandler("fechgrupo", fechar_grupo))
+app.add_handler(CommandHandler("meuid", meu_id))
+import fcntl, sys
+lock_file = open('/tmp/bot.lock', 'w')
+try:
+    fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except IOError:
+    print("Bot já está rodando!")
+    sys.exit(0)
+app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
