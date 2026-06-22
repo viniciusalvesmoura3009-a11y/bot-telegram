@@ -41,7 +41,6 @@ def save_likes_usuarios():
     except:
         pass
 
-load_bio_usuarios()
 USUARIOS_AUTO = set()
 USUARIOS_BIO = set()
 
