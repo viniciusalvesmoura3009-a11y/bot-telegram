@@ -47,13 +47,18 @@ USUARIOS_BIO = set()
 cadastros = {}
 import os as _os
 def load_auto():
-    if _os.path.exists("auto.json"):
-        import json as _json
-        return _json.load(open("auto.json"))
-    return {}
+    try:
+        usos = load_usos()
+        return usos.get("auto_data", {})
+    except:
+        return {}
 def save_auto(d):
-    import json as _json
-    _json.dump(d, open("auto.json", "w"))
+    try:
+        usos = load_usos()
+        usos["auto_data"] = d
+        save_usos(usos)
+    except:
+        pass
 uids_auto = load_auto()
 
 PETS = {
