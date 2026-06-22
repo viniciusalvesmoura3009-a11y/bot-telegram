@@ -24,8 +24,7 @@ BASE_URL = "https://fluxdevservice.com/api/frifas"
 DONO_ID = 7895922394
 USUARIOS_LIKES = set()
 
-def load_likes_usuarios()
-load_bio_usuarios():
+def load_likes_usuarios():
     global USUARIOS_LIKES
     try:
         usos = load_usos()
