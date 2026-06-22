@@ -155,7 +155,6 @@ def contar_uso(user_id):
         usos[uid] = {"data": hoje, "qtd": 0}
     usos[uid]["qtd"] += 1
     save_usos(usos)
-    print(f"[CONTAR_USO] uid={uid} qtd_depois={usos[uid]['qtd']} USOS_FILE={USOS_FILE}")
     return usos[uid]["qtd"]
 
 def total_geral_hoje():
