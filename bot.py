@@ -446,7 +446,7 @@ async def addbio(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /addbio <id_telegram>")
         return
     USUARIOS_BIO.add(int(context.args[0]))
-        save_bio_usuarios()
+    save_bio_usuarios()
     await update.message.reply_text("Usuario " + context.args[0] + " pode usar /bio agora!")
 
 async def removebio(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -457,7 +457,7 @@ async def removebio(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /removebio <id_telegram>")
         return
     USUARIOS_BIO.discard(int(context.args[0]))
-        save_bio_usuarios()
+    save_bio_usuarios()
     await update.message.reply_text("Usuario " + context.args[0] + " removido!")
 
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
