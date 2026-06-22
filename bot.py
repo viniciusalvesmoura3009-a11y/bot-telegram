@@ -23,6 +23,25 @@ FRIFAS_KEY = "71373c8b-ab27-a581-39d9-1d586063d63a"
 BASE_URL = "https://fluxdevservice.com/api/frifas"
 DONO_ID = 7895922394
 USUARIOS_LIKES = set()
+
+def load_likes_usuarios():
+    global USUARIOS_LIKES
+    try:
+        usos = load_usos()
+        ids = usos.get("usuarios_likes", [])
+        USUARIOS_LIKES = set(ids)
+    except:
+        USUARIOS_LIKES = set()
+
+def save_likes_usuarios():
+    try:
+        usos = load_usos()
+        usos["usuarios_likes"] = list(USUARIOS_LIKES)
+        save_usos(usos)
+    except:
+        pass
+
+load_likes_usuarios()
 USUARIOS_AUTO = set()
 USUARIOS_BIO = set()
 cadastros = {}
