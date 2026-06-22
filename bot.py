@@ -44,6 +44,23 @@ def save_likes_usuarios():
 load_likes_usuarios()
 USUARIOS_AUTO = set()
 USUARIOS_BIO = set()
+
+def load_bio_usuarios():
+    global USUARIOS_BIO
+    try:
+        usos = load_usos()
+        ids = usos.get("usuarios_bio", [])
+        USUARIOS_BIO = set(ids)
+    except:
+        USUARIOS_BIO = set()
+
+def save_bio_usuarios():
+    try:
+        usos = load_usos()
+        usos["usuarios_bio"] = list(USUARIOS_BIO)
+        save_usos(usos)
+    except:
+        pass
 cadastros = {}
 import os as _os
 def load_auto():
@@ -429,6 +446,7 @@ async def addbio(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /addbio <id_telegram>")
         return
     USUARIOS_BIO.add(int(context.args[0]))
+        save_bio_usuarios()
     await update.message.reply_text("Usuario " + context.args[0] + " pode usar /bio agora!")
 
 async def removebio(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -439,6 +457,7 @@ async def removebio(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /removebio <id_telegram>")
         return
     USUARIOS_BIO.discard(int(context.args[0]))
+        save_bio_usuarios()
     await update.message.reply_text("Usuario " + context.args[0] + " removido!")
 
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
