@@ -85,6 +85,23 @@ LIMITE_DIARIO = 100
 
 
 
+
+def contar_like():
+    from datetime import datetime as _dt
+    usos = load_usos()
+    hoje = _dt.now().strftime("%Y-%m-%d")
+    if "likes_geral" not in usos or usos["likes_geral"].get("data") != hoje:
+        usos["likes_geral"] = {"data": hoje, "qtd": 0}
+    usos["likes_geral"]["qtd"] += 1
+    save_usos(usos)
+
+def total_likes_hoje():
+    from datetime import datetime as _dt
+    usos = load_usos()
+    hoje = _dt.now().strftime("%Y-%m-%d")
+    d = usos.get("likes_geral", {})
+    return d.get("qtd", 0) if d.get("data") == hoje else 0
+
 def contar_uso(user_id):
     from datetime import datetime as _dt
     usos = load_usos()
@@ -121,7 +138,8 @@ async def usosgeral(update, context):
         await update.message.reply_text("⚠️ Apenas o dono pode usar este comando.")
         return
     total = total_geral_hoje()
-    await update.message.reply_text(f"📊 Total geral de usos hoje: {total}")
+    total = total_likes_hoje()
+    await update.message.reply_text(f"📊 Likes usados hoje: {total}")
 
 async def send_likes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != DONO_ID:
@@ -141,6 +159,7 @@ async def send_likes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data.get("success") or data.get("sucesso"):
         d = data["data"][0]
         qtd_uso = contar_uso(update.message.from_user.id)
+        contar_like()
         if update.message.from_user.id != DONO_ID:
             incrementar_uso_vip(str(update.message.from_user.id))
         msg = (
