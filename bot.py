@@ -344,7 +344,7 @@ async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     resp = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": uid})
     try:
         d = resp.json()
-        nick = d["data"][0]["conta"]["nome_conta"] if resp.status_code == 200 and d.get("success") else uid
+        nick = d["data"][0]["conta"]["nome_conta"] if resp.status_code == 200 and (d.get("success") or d.get("sucesso")) else uid
     except:
         nick = uid
     await update.message.reply_text("✅ Auto like ativado!\n👤 Nick: " + str(nick) + "\n🆔 UID: " + str(uid) + "\n✨ Enviando todos os dias. 👍")
