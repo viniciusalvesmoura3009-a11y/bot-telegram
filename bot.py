@@ -613,7 +613,6 @@ async def abrir_grupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await context.bot.set_chat_permissions(update.message.chat_id, perms)
     await update.message.reply_text("✅ *GRUPO ABERTO:* Agora todos os membros podem enviar mensagens.", parse_mode="Markdown")
-token = "8833940996:AAFX_gU52MFUFAeSuxuakYsFxu8Eo9tsf0I"
 
 async def meu_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.message.from_user.id
