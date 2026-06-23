@@ -181,6 +181,7 @@ async def usosgeral(update, context):
     await update.message.reply_text(f"📊 Likes usados hoje: {total}")
 
 async def send_likes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     if update.message.from_user.id != DONO_ID:
         valido, restantes, motivo = checar_vip(str(update.message.from_user.id))
         if not valido:
