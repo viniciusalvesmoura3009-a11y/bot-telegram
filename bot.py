@@ -754,6 +754,7 @@ def incrementar_uso_vip(uid):
 app.add_handler(CommandHandler("abrgrupo", abrir_grupo))
 app.add_handler(CommandHandler("fechgrupo", fechar_grupo))
 app.add_handler(CommandHandler("meuid", meu_id))
+app.add_handler(CommandHandler("stats", stats))
 import fcntl, sys
 lock_file = open('/tmp/bot.lock', 'w')
 try:
@@ -762,3 +763,16 @@ except IOError:
     print("Bot já está rodando!")
     sys.exit(0)
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    vips = load_vips()
+    total_usuarios = len(usos.get("usuarios_bio", []))
+    total_likes_hoje = usos.get("likes_geral", {}).get("qtd", 0)
+    total_vips = len(vips)
+    msg = (
+        "📊 *Estatísticas do Bot*\n\n"
+        f"👥 Usuários cadastrados: *{total_usuarios}*\n"
+        f"💝 Likes enviados hoje: *{total_likes_hoje}*\n"
+        f"⭐ VIPs ativos: *{total_vips}*"
+    )
+    await update.message.reply_text(msg, parse_mode="Markdown")
