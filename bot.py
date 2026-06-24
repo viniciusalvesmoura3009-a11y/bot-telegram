@@ -756,6 +756,7 @@ app.add_handler(CommandHandler("fechgrupo", fechar_grupo))
 app.add_handler(CommandHandler("meuid", meu_id))
 
 async def stats(update, context):
+    usos = load_usos()
     vips = load_vips()
     total_usuarios = len(usos.get("usuarios_bio", []))
     total_likes_hoje = usos.get("likes_geral", {}).get("qtd", 0)
