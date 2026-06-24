@@ -754,7 +754,6 @@ def incrementar_uso_vip(uid):
 app.add_handler(CommandHandler("abrgrupo", abrir_grupo))
 app.add_handler(CommandHandler("fechgrupo", fechar_grupo))
 app.add_handler(CommandHandler("meuid", meu_id))
-app.add_handler(CommandHandler("stats", stats))
 import fcntl, sys
 lock_file = open('/tmp/bot.lock', 'w')
 try:
@@ -776,3 +775,4 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⭐ VIPs ativos: *{total_vips}*"
     )
     await update.message.reply_text(msg, parse_mode="Markdown")
+app.add_handler(CommandHandler("stats", stats))
