@@ -761,8 +761,6 @@ try:
 except IOError:
     print("Bot já está rodando!")
     sys.exit(0)
-app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
-
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     vips = load_vips()
     total_usuarios = len(usos.get("usuarios_bio", []))
@@ -776,3 +774,5 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(msg, parse_mode="Markdown")
 app.add_handler(CommandHandler("stats", stats))
+app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
+
