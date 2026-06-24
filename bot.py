@@ -775,6 +775,7 @@ async def stats(update, context):
 
 app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, boas_vindas))
 app.add_handler(CommandHandler("stats", stats))
+app.add_handler(CommandHandler("tabela", tabela))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 
@@ -799,4 +800,3 @@ async def tabela(update, context):
     )
     await update.message.reply_text(texto, parse_mode="MarkdownV2", disable_web_page_preview=True)
 
-app.add_handler(CommandHandler("tabela", tabela))
