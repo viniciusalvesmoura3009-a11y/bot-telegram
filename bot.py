@@ -765,6 +765,19 @@ app.add_handler(CommandHandler("meuid", meu_id))
         f"⭐ VIPs ativos: *{total_vips}*"
     )
     await update.message.reply_text(msg, parse_mode="Markdown")
+async def stats(update, context):
+    vips = load_vips()
+    total_usuarios = len(usos.get("usuarios_bio", []))
+    total_likes_hoje = usos.get("likes_geral", {}).get("qtd", 0)
+    total_vips = len(vips)
+    msg = (
+        "📊 *Estatísticas do Bot*\n\n"
+        f"👥 Usuários cadastrados: *{total_usuarios}*\n"
+        f"💝 Likes enviados hoje: *{total_likes_hoje}*\n"
+        f"⭐ VIPs ativos: *{total_vips}*"
+    )
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
 app.add_handler(CommandHandler("stats", stats))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
