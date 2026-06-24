@@ -754,14 +754,6 @@ def incrementar_uso_vip(uid):
 app.add_handler(CommandHandler("abrgrupo", abrir_grupo))
 app.add_handler(CommandHandler("fechgrupo", fechar_grupo))
 app.add_handler(CommandHandler("meuid", meu_id))
-import fcntl, sys
-lock_file = open('/tmp/bot.lock', 'w')
-try:
-    fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-except IOError:
-    print("Bot já está rodando!")
-    sys.exit(0)
-async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     vips = load_vips()
     total_usuarios = len(usos.get("usuarios_bio", []))
     total_likes_hoje = usos.get("likes_geral", {}).get("qtd", 0)
