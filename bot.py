@@ -761,7 +761,7 @@ try:
 except IOError:
     print("Bot já está rodando!")
     sys.exit(0)
-app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     vips = load_vips()
