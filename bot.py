@@ -478,6 +478,7 @@ async def mostrar_pagina_menu(update, context, pagina):
                 ("📊 /info", "cmd_info"),
                 ("🆔 /meuid", "cmd_meuid"),
                 ("📈 /meususos", "cmd_meususos"),
+                ("💰 /tabela", "cmd_tabela"),
             ]
         },
         2: {
@@ -536,6 +537,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "cmd_removeautolike": ("⏹ /removeautolike", "Remove autolike admin.\n\nComo usar:\n/removeautolike <id>"),
         "cmd_ban": ("🚫 /ban", "Bane um usuário.\n\nComo usar:\nResponda a mensagem com /ban"),
         "cmd_fechgrupo": ("🔒 /fechgrupo", "Fecha o grupo.\n\nComo usar:\n/fechgrupo"),
+        "cmd_tabela": ("💰 /tabela", "Ver tabela de preços de likes.\n\nUse:\n/tabela"),
         "cmd_abrgrupo": ("🔓 /abrgrupo", "Abre o grupo.\n\nComo usar:\n/abrgrupo"),
     }
     if data.startswith("menu_"):
