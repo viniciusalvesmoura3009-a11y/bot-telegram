@@ -771,6 +771,7 @@ async def stats(update, context):
     )
     await update.message.reply_text(msg, parse_mode="Markdown")
 
+app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, boas_vindas))
 app.add_handler(CommandHandler("stats", stats))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
