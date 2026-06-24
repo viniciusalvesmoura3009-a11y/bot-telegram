@@ -775,3 +775,26 @@ app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, boas_vinda
 app.add_handler(CommandHandler("stats", stats))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
+
+async def tabela(update, context):
+    texto = (
+        "✅ *LIKES MANUALMENTE*\n"
+        "*TABELA DE LIKES VIA ID 👍*\n\n"
+        "• 200 LIKES 💰 R$2,00 \`1 DIA\`\n"
+        "• 400 LIKES 💰 R$4,00 \`2 DIA\`\n"
+        "• 600 LIKES 💰 R$6,00 \`3 DIA\`\n"
+        "• 800 LIKES 💰 R$8,00 \`4 DIA\`\n"
+        "• 1\.000 LIKES 💰 R$10,00 \`5 DIA\`\n"
+        "• 2\.000 LIKES 💰 R$15,00 \`10 DIA\`\n"
+        "• 3\.000 LIKES 💰 R$20,00 \`15 DIA\`\n"
+        "• 4\.000 LIKES 💰 R$25,00 \`20 DIA\`\n"
+        "• 5\.000 LIKES 💰 R$30,00 \`25 DIA\`\n"
+        "• 10\.000 LIKES 💰 R$55,00 \`50 DIA\`\n\n"
+        "● Caindo de *200 a 220* likes por dia\!\n\n"
+        "*Semanal R$12,00* — 1\.400 👍\n"
+        "*Mensal R$35,00* — 6\.000 👍\n\n"
+        "[🛒 CLIQUE AQUI PRA COMPRAR](https://wa.me/5582988631900)"
+    )
+    await update.message.reply_text(texto, parse_mode="MarkdownV2", disable_web_page_preview=True)
+
+app.add_handler(CommandHandler("tabela", tabela))
