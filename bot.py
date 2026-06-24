@@ -16,6 +16,8 @@ import os
 from datetime import datetime
 import requests
 import asyncio
+import time
+time.sleep(5)
 from telegram import Update, ChatPermissions
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
 
