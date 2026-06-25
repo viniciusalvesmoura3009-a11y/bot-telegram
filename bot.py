@@ -801,5 +801,15 @@ async def tabela(update, context):
 
 app.add_handler(CommandHandler("stats", stats))
 app.add_handler(CommandHandler("tabela", tabela))
+async def token(update, context):
+    texto = (
+        "🎁 *ACESSE AO LINK AQUI EM BAIXO*\n\n"
+        "👇\n\n"
+        "https://tinyurl.com/Supremegiftstore"
+    )
+    await update.message.reply_text(texto, parse_mode="Markdown", disable_web_page_preview=True)
+
+app.add_handler(CommandHandler("token", token))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
+
 
