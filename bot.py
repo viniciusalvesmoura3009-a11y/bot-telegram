@@ -188,15 +188,11 @@ async def send_likes(update: Update, context: ContextTypes.DEFAULT_TYPE):
         valido, restantes, motivo = checar_vip(str(update.message.from_user.id))
         if not valido:
             if motivo == "limite":
-                await update.message.reply_text("⛔ Limite diário atingido!\n\nVocê já usou todos os seus IDs disponíveis hoje. Volte amanhã para usar novamente.")
-                else:
-                    await update.message.reply_text("❌ Seu VIP expirou!\n\nEntre em contato com o dono para renovar.\n☎ (82) 98863-1900 WhatsApp")
-                    return
-                else:
-                    await update.message.reply_text("⛔ Voce nao tem VIP ativo!\n\nAdquira seu plano com o dono.\n☎ (82) 98863-1900 WhatsApp")
-                    return
-                    return
-    if not context.args:
+                await update.message.reply_text("🚫 Limite diario atingido!\n\nVoce ja usou todos os seus IDs disponiveis hoje. Volte amanha para usar novamente.")
+                return
+            else:
+                await update.message.reply_text("❌ Seu VIP expirou ou voce nao tem VIP ativo!\n\nEntre em contato com o dono para renovar.\n☎ (82) 98863-1900 WhatsApp")
+                return
         await update.message.reply_text("Uso: /likes <uid>")
         return
     uid = context.args[0]
