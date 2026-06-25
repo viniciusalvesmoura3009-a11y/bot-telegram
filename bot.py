@@ -234,7 +234,13 @@ async def update_bio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args or len(context.args) < 2:
         await update.message.reply_text("Uso: /bio <token> <nova_bio>")
         return
-    token = context.args[0]
+    token_raw = context.args[0]
+    if "eat=" in token_raw:
+        import re
+        match = re.search(r'eat=([^&]+)', token_raw)
+        token = match.group(1) if match else token_raw
+    else:
+        token = token_raw
     bio = " ".join(context.args[1:])
     resp = requests.get(f"{BASE_URL}/update-bio/account", params={"key": FRIFAS_KEY, "eat_token": token, "newbio": bio})
     try:
