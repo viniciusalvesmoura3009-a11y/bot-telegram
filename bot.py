@@ -479,6 +479,7 @@ async def mostrar_pagina_menu(update, context, pagina):
         1: {
             "titulo": "📋 *Menu — Página 1/2*\n👤 *Comandos do Usuário:*",
             "botoes": [
+                ("🎁 /token", "cmd_token"),
                 ("👍 /likes", "cmd_likes"),
                 ("🔄 /autolike", "cmd_autolike"),
                 ("⏹ /stopauto", "cmd_stopauto"),
@@ -546,6 +547,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "cmd_removeautolike": ("⏹ /removeautolike", "Remove autolike admin.\n\nComo usar:\n/removeautolike <id>"),
         "cmd_ban": ("🚫 /ban", "Bane um usuário.\n\nComo usar:\nResponda a mensagem com /ban"),
         "cmd_fechgrupo": ("🔒 /fechgrupo", "Fecha o grupo.\n\nComo usar:\n/fechgrupo"),
+        "cmd_token": ("🎁 /token", "Acesse o link para pegar seu token.\n\nUse:\n/token"),
         "cmd_tabela": ("💰 /tabela", "Ver tabela de preços de likes.\n\nUse:\n/tabela"),
         "cmd_abrgrupo": ("🔓 /abrgrupo", "Abre o grupo.\n\nComo usar:\n/abrgrupo"),
     }
