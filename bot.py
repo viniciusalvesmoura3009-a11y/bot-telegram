@@ -476,11 +476,11 @@ async def mostrar_pagina_menu(update, context, pagina):
         1: {
             "titulo": "📋 *Menu — Página 1/2*\n👤 *Comandos do Usuário:*",
             "botoes": [
-                ("🎁 /token", "cmd_token"),
                 ("👍 /likes", "cmd_likes"),
                 ("🔄 /autolike", "cmd_autolike"),
                 ("⏹ /stopauto", "cmd_stopauto"),
                 ("📝 /bio", "cmd_bio"),
+                ("🎁 /token", "cmd_token"),
                 ("📋 /cadastrar", "cmd_cadastrar"),
                 ("📊 /info", "cmd_info"),
                 ("🆔 /meuid", "cmd_meuid"),
