@@ -723,7 +723,15 @@ async def listvip(update, context):
         return
     msgs = []
     msg = "👑 VIPs ATIVOS:\n\n"
-    for uid, data in vips.items():
+    now = datetime.now()
+    for uid, data in list(vips.items()):
+        try:
+            if now > datetime.strptime(data['expira'], "%Y-%m-%d %H:%M:%S"):
+                del vips[uid]
+                save_vips(vips)
+                continue
+        except:
+            pass
         linha = f"👤 {data.get('nome', 'Desconhecido')}\n🆔 {uid}\n📅 Inicio: {data.get('data_inicio', '-')}  Expira: {data['expira']}\n🔄 Usos/dia: {data['usos_por_dia']}\n\n"
         if len(msg) + len(linha) > 3500:
             msgs.append(msg)
