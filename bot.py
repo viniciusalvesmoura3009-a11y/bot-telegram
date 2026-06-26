@@ -193,6 +193,7 @@ async def send_likes(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 await update.message.reply_text("❌ Seu VIP expirou ou voce nao tem VIP ativo!\n\nEntre em contato com o dono para renovar.\n☎ (82) 98863-1900 WhatsApp")
                 return
+    if not context.args:
         await update.message.reply_text("Uso: /likes <uid>")
         return
     uid = context.args[0]
