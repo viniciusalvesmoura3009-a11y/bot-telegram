@@ -841,7 +841,7 @@ async def ia(update, context):
     try:
         import requests as req, json
         resp = req.get(
-            f"{BASE_URL}/api/ia/flux-chat",
+            "https://fluxdevservice.com/api/ia/flux-chat",
             params={"key": FRIFAS_KEY, "prompt": prompt, "chat_id": chat_id, "model": "flux-thinking-search-max"},
             stream=True, timeout=120
         )
