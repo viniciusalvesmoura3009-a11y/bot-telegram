@@ -824,6 +824,44 @@ async def token(update, context):
     await update.message.reply_text(texto, parse_mode="Markdown", disable_web_page_preview=True)
 
 app.add_handler(CommandHandler("token", token))
+
+async def ia(update, context):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        valido, restantes, motivo = checar_vip(uid)
+        if not valido:
+            await update.message.reply_text("❌ Esse comando é exclusivo para VIPs!\n\nEntre em contato com o dono para adquirir.\n📱 (82) 98863-1900 WhatsApp")
+            return
+    if not context.args:
+        await update.message.reply_text("Uso: /ia <pergunta>")
+        return
+    prompt = " ".join(context.args)
+    chat_id = str(update.message.from_user.id)[:6]
+    await update.message.reply_text("🤖 Processando sua pergunta...")
+    try:
+        import requests as req, json
+        resp = req.get(
+            f"{BASE_URL}/api/ia/flux-chat",
+            params={"key": FRIFAS_KEY, "prompt": prompt, "chat_id": chat_id, "model": "flux-thinking-search-max"},
+            stream=True, timeout=120
+        )
+        resposta = ""
+        for line in resp.iter_lines():
+            if line:
+                try:
+                    data = json.loads(line.decode("utf-8"))
+                    if data.get("type") in ("flux-text-start", "flux-text"):
+                        resposta += data.get("result", "")
+                except:
+                    pass
+        if resposta:
+            await update.message.reply_text(f"🤖 *Flux IA:*\n\n{resposta}", parse_mode="Markdown")
+        else:
+            await update.message.reply_text("❌ Não obtive resposta da IA. Tente novamente.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+
+app.add_handler(CommandHandler("ia", ia))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 
