@@ -502,6 +502,9 @@ async def mostrar_pagina_menu(update, context, pagina):
                 ("🆔 /meuid", "cmd_meuid"),
                 ("📈 /meususos", "cmd_meususos"),
                 ("💰 /tabela", "cmd_tabela"),
+                ("➕ /addlikes", "cmd_addlikes"),
+                ("➖ /removelikes", "cmd_removelikes"),
+                ("📋 /listautolike", "cmd_listautolike"),
             ]
         },
         2: {
@@ -526,6 +529,8 @@ async def mostrar_pagina_menu(update, context, pagina):
                 ("📈 /stats", "cmd_stats"),
                 ("📊 /usosgeral", "cmd_usosgeral"),
                 ("🗑️ /removebio", "cmd_removebio"),
+                ("🎬 /ytmp4", "cmd_ytmp4"),
+                ("⬇️ /rebaixa", "cmd_rebaixa"),
             ]
         }
     }
@@ -557,6 +562,8 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     descricoes = {
         "cmd_likes": ("👍 /likes", "Envia likes para um jogador.\n\nComo usar:\n/likes <uid>\n\nExemplo:\n/likes 2031944584"),
+        "cmd_addlikes": ("➕ /addlikes", "Libera um usuário para usar likes.\n\nComo usar:\n/addlikes <id_telegram>"),
+        "cmd_removelikes": ("➖ /removelikes", "Remove o acesso de um usuário aos likes.\n\nComo usar:\n/removelikes <id_telegram>"),
         "cmd_autolike": ("🔄 /autolike", "Ativa o autolike diário.\n\nComo usar:\n/autolike <uid>\n\nExemplo:\n/autolike 2031944584"),
         "cmd_stopauto": ("⏹ /stopauto", "Para o autolike de um UID.\n\nComo usar:\n/stopauto <uid>\n\nExemplo:\n/stopauto 2031944584"),
         "cmd_bio": ("📝 /bio", "Muda a bio da conta.\n\nComo usar:\n/bio <token> <nova bio>"),
