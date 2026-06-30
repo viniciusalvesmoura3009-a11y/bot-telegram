@@ -946,6 +946,71 @@ async def ytmp4(update, context):
 
 app.add_handler(CommandHandler("ytmp3", ytmp3))
 app.add_handler(CommandHandler("ytmp4", ytmp4))
+
+async def promove(update, context):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ Apenas o dono pode usar esse comando.")
+        return
+    target_id = None
+    if update.message.reply_to_message:
+        target_id = update.message.reply_to_message.from_user.id
+    elif context.args:
+        try:
+            target_id = int(context.args[0])
+        except:
+            await update.message.reply_text("Uso: /promove <id> ou responda a mensagem do usuário")
+            return
+    else:
+        await update.message.reply_text("Uso: /promove <id> ou responda a mensagem do usuário")
+        return
+    try:
+        await context.bot.promote_chat_member(
+            chat_id=update.effective_chat.id,
+            user_id=target_id,
+            can_change_info=True,
+            can_delete_messages=True,
+            can_invite_users=True,
+            can_restrict_members=True,
+            can_pin_messages=True,
+            can_promote_members=False
+        )
+        await update.message.reply_text(f"✅ Usuário {target_id} promovido a ADM!")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro ao promover: {str(e)}\n\nVerifique se o bot é admin com permissão de promover membros.")
+
+async def rebaixa(update, context):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ Apenas o dono pode usar esse comando.")
+        return
+    target_id = None
+    if update.message.reply_to_message:
+        target_id = update.message.reply_to_message.from_user.id
+    elif context.args:
+        try:
+            target_id = int(context.args[0])
+        except:
+            await update.message.reply_text("Uso: /rebaixa <id> ou responda a mensagem do usuário")
+            return
+    else:
+        await update.message.reply_text("Uso: /rebaixa <id> ou responda a mensagem do usuário")
+        return
+    try:
+        await context.bot.promote_chat_member(
+            chat_id=update.effective_chat.id,
+            user_id=target_id,
+            can_change_info=False,
+            can_delete_messages=False,
+            can_invite_users=False,
+            can_restrict_members=False,
+            can_pin_messages=False,
+            can_promote_members=False
+        )
+        await update.message.reply_text(f"✅ ADM removido do usuário {target_id}!")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro ao rebaixar: {str(e)}\n\nVerifique se o bot é admin com permissão de promover membros.")
+
+app.add_handler(CommandHandler("promove", promove))
+app.add_handler(CommandHandler("rebaixa", rebaixa))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 
