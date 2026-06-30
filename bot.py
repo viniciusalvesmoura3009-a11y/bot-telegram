@@ -518,6 +518,8 @@ async def mostrar_pagina_menu(update, context, pagina):
                 ("🚫 /ban", "cmd_ban"),
                 ("🔒 /fechgrupo", "cmd_fechgrupo"),
                 ("🔓 /abrgrupo", "cmd_abrgrupo"),
+                ("⬆️ /promove", "cmd_promove"),
+                ("⬇️ /rebaixa", "cmd_rebaixa"),
             ]
         },
         3: {
