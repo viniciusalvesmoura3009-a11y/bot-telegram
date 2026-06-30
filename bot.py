@@ -345,10 +345,11 @@ async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args:
-        await update.message.reply_text("Uso: /autolike <uid>")
+        await update.message.reply_text("Uso: /autolike <uid> <dias>\n\nExemplo: /autolike 123456789 30")
         return
     uid = context.args[0]
-    uids_auto[uid] = update.message.chat_id
+    dias = int(context.args[1]) if len(context.args) > 1 else 30
+    uids_auto[uid] = {"chat_id": update.message.chat_id, "dias_restantes": dias, "criado_em": datetime.now().strftime("%Y-%m-%d")}
     save_auto(uids_auto)
     resp = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": uid})
     try:
@@ -380,7 +381,17 @@ async def stop_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def autolike_loop(app):
     while True:
-        for uid, chat_id in list(uids_auto.items()):
+        for uid, info in list(uids_auto.items()):
+            chat_id = info["chat_id"] if isinstance(info, dict) else info
+            if isinstance(info, dict):
+                if info.get("dias_restantes", 1) <= 0:
+                    uids_auto.pop(uid, None)
+                    save_auto(uids_auto)
+                    try:
+                        await app.bot.send_message(chat_id=chat_id, text=f"⏰ Auto-like do UID {uid} expirou e foi finalizado!")
+                    except:
+                        pass
+                    continue
             try:
                 resp = requests.get(f"{BASE_URL}/sendlikes", params={"key": FRIFAS_KEY, "id": uid})
                 data = resp.json()
@@ -395,6 +406,10 @@ async def autolike_loop(app):
 "🔱 Dono: ༒REBELDE ༒VENDAS"
 )
                     await app.bot.send_message(chat_id=chat_id, text=msg)
+                    if isinstance(info, dict):
+                        info["dias_restantes"] = info.get("dias_restantes", 1) - 1
+                        uids_auto[uid] = info
+                        save_auto(uids_auto)
             except Exception as e:
                 print(f"[AUTOLIKE LOOP] Erro ao processar UID {uid}: {e}")
         await asyncio.sleep(86400)
@@ -862,6 +877,24 @@ async def ia(update, context):
         await update.message.reply_text(f"❌ Erro: {str(e)}")
 
 app.add_handler(CommandHandler("ia", ia))
+
+async def listautolike(update, context):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ Apenas o dono pode usar esse comando.")
+        return
+    uids_auto = load_auto()
+    if not uids_auto:
+        await update.message.reply_text("Nenhum auto-like ativo!")
+        return
+    msg = "🔄 AUTO-LIKES ATIVOS:\n\n"
+    for uid, info in uids_auto.items():
+        if isinstance(info, dict):
+            msg += f"👤 UID: {uid}\n📅 Dias restantes: {info.get('dias_restantes','?')}\n🗓 Criado em: {info.get('criado_em','?')}\n\n"
+        else:
+            msg += f"👤 UID: {uid}\n(sem controle de dias)\n\n"
+    await update.message.reply_text(msg)
+
+app.add_handler(CommandHandler("listautolike", listautolike))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 
