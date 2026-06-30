@@ -525,12 +525,10 @@ async def mostrar_pagina_menu(update, context, pagina):
             "botoes": [
                 ("🤖 /ia", "cmd_ia"),
                 ("🎵 /ytmp3", "cmd_ytmp3"),
-                ("⬆️ /promove", "cmd_promove"),
                 ("📈 /stats", "cmd_stats"),
                 ("📊 /usosgeral", "cmd_usosgeral"),
                 ("🗑️ /removebio", "cmd_removebio"),
                 ("🎬 /ytmp4", "cmd_ytmp4"),
-                ("⬇️ /rebaixa", "cmd_rebaixa"),
             ]
         }
     }
