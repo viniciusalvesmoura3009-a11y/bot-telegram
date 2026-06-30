@@ -490,7 +490,7 @@ async def mostrar_pagina_menu(update, context, pagina):
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     paginas = {
         1: {
-            "titulo": "📋 *Menu — Página 1/2*\n👤 *Comandos do Usuário:*",
+            "titulo": "📋 *Menu — Página 1/3*\n👤 *Comandos do Usuário:*",
             "botoes": [
                 ("👍 /likes", "cmd_likes"),
                 ("🔄 /autolike", "cmd_autolike"),
@@ -505,7 +505,7 @@ async def mostrar_pagina_menu(update, context, pagina):
             ]
         },
         2: {
-            "titulo": "📋 *Menu — Página 2/2*\n👑 *Comandos Admin:*",
+            "titulo": "📋 *Menu — Página 2/3*\n👑 *Comandos Admin:*",
             "botoes": [
                 ("➕ /addvip", "cmd_addvip"),
                 ("➖ /removevip", "cmd_removevip"),
@@ -515,6 +515,17 @@ async def mostrar_pagina_menu(update, context, pagina):
                 ("🚫 /ban", "cmd_ban"),
                 ("🔒 /fechgrupo", "cmd_fechgrupo"),
                 ("🔓 /abrgrupo", "cmd_abrgrupo"),
+            ]
+        },
+        3: {
+            "titulo": "📋 *Menu — Página 3/3*\n⚙️ *Comandos Extras:*",
+            "botoes": [
+                ("🤖 /ia", "cmd_ia"),
+                ("🎵 /ytmp3", "cmd_ytmp3"),
+                ("⬆️ /promove", "cmd_promove"),
+                ("📈 /stats", "cmd_stats"),
+                ("📊 /usosgeral", "cmd_usosgeral"),
+                ("🗑️ /removebio", "cmd_removebio"),
             ]
         }
     }
