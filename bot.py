@@ -895,6 +895,57 @@ async def listautolike(update, context):
     await update.message.reply_text(msg)
 
 app.add_handler(CommandHandler("listautolike", listautolike))
+
+async def ytmp3(update, context):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        valido, restantes, motivo = checar_vip(uid)
+        if not valido:
+            await update.message.reply_text("❌ Esse comando é exclusivo para VIPs!\n\nEntre em contato com o dono para adquirir.\n📱 (82) 98863-1900 WhatsApp")
+            return
+    if not context.args:
+        await update.message.reply_text("Uso: /ytmp3 <nome ou link do video>")
+        return
+    query = " ".join(context.args)
+    await update.message.reply_text("🎵 Processando áudio, aguarde...")
+    try:
+        resp = requests.get(f"https://fluxdevservice.com/api/download/ytmp3", params={"key": FRIFAS_KEY, "q": query}, timeout=60)
+        data = resp.json()
+        if data.get("success"):
+            d = data["data"]
+            media_url = f"https://fluxdevservice.com{d['url']}"
+            await update.message.reply_audio(audio=media_url, caption=f"🎵 Áudio baixado com sucesso!")
+        else:
+            await update.message.reply_text(f"❌ Erro: {data.get('message','Não foi possível processar')}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+
+async def ytmp4(update, context):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        valido, restantes, motivo = checar_vip(uid)
+        if not valido:
+            await update.message.reply_text("❌ Esse comando é exclusivo para VIPs!\n\nEntre em contato com o dono para adquirir.\n📱 (82) 98863-1900 WhatsApp")
+            return
+    if not context.args:
+        await update.message.reply_text("Uso: /ytmp4 <nome ou link do video>")
+        return
+    query = " ".join(context.args)
+    await update.message.reply_text("🎬 Processando vídeo, aguarde...")
+    try:
+        resp = requests.get(f"https://fluxdevservice.com/api/download/ytmp4", params={"key": FRIFAS_KEY, "q": query}, timeout=60)
+        data = resp.json()
+        if data.get("success"):
+            d = data["data"]
+            media_url = f"https://fluxdevservice.com{d['url']}"
+            await update.message.reply_video(video=media_url, caption=f"🎬 Vídeo baixado com sucesso!")
+        else:
+            await update.message.reply_text(f"❌ Erro: {data.get('message','Não foi possível processar')}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+
+app.add_handler(CommandHandler("ytmp3", ytmp3))
+app.add_handler(CommandHandler("ytmp4", ytmp4))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 
