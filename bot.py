@@ -932,17 +932,21 @@ async def ytmp3(update, context):
         return
     query = " ".join(context.args)
     await update.message.reply_text("🎵 Processando áudio, aguarde...")
-    try:
-        resp = requests.get(f"https://fluxdevservice.com/api/download/ytmp3", params={"key": FRIFAS_KEY, "q": query}, timeout=120)
-        data = resp.json()
-        if data.get("success"):
-            d = data["data"]
-            media_url = f"https://fluxdevservice.com{d['url']}"
-            await update.message.reply_audio(audio=media_url, caption=f"🎵 Áudio baixado com sucesso!")
-        else:
-            await update.message.reply_text(f"❌ Erro: {data.get('message','Não foi possível processar')}")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Erro: {str(e)}")
+    for tentativa in range(2):
+        try:
+            resp = requests.get(f"https://fluxdevservice.com/api/download/ytmp3", params={"key": FRIFAS_KEY, "q": query}, timeout=120)
+            data = resp.json()
+            if data.get("success"):
+                d = data["data"]
+                media_url = f"https://fluxdevservice.com{d['url']}"
+                await update.message.reply_audio(audio=media_url, caption=f"🎵 Áudio baixado com sucesso!")
+                break
+            else:
+                if tentativa == 1:
+                    await update.message.reply_text(f"❌ Erro: {data.get('message','Não foi possível processar')}")
+        except Exception as e:
+            if tentativa == 1:
+                await update.message.reply_text(f"❌ Erro: {str(e)}")
 
 async def ytmp4(update, context):
     uid = str(update.message.from_user.id)
