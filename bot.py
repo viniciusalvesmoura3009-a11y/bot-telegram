@@ -1048,8 +1048,8 @@ app.add_handler(CommandHandler("rebaixa", rebaixa))
 
 async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.message.from_user.id)
-    if uid != str(DONO_ID):
-        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
         return
     if not context.args:
         await update.message.reply_text("Uso: /passe <uid>")
@@ -1079,4 +1079,44 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Erro: {str(e)}")
 
 app.add_handler(CommandHandler("passe", passe))
+app.add_handler(CommandHandler("addpasse", addpasse))
+app.add_handler(CommandHandler("removepasse", removepasse))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
+
+def load_passe_usuarios():
+    usos = load_usos()
+    return set(usos.get("passe_usuarios", []))
+
+def save_passe_usuarios(usuarios):
+    usos = load_usos()
+    usos["passe_usuarios"] = list(usuarios)
+    save_usos(usos)
+
+PASSE_USUARIOS = load_passe_usuarios()
+
+async def addpasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /addpasse <id_telegram>")
+        return
+    alvo = context.args[0]
+    PASSE_USUARIOS.add(alvo)
+    save_passe_usuarios(PASSE_USUARIOS)
+    await update.message.reply_text(f"✅ Usuário {alvo} autorizado a usar /passe.")
+
+async def removepasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removepasse <id_telegram>")
+        return
+    alvo = context.args[0]
+    PASSE_USUARIOS.discard(alvo)
+    save_passe_usuarios(PASSE_USUARIOS)
+    await update.message.reply_text(f"✅ Usuário {alvo} removido do acesso ao /passe.")
+
