@@ -1079,7 +1079,6 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Erro: {str(e)}")
 
 app.add_handler(CommandHandler("passe", passe))
-app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 def load_passe_usuarios():
     usos = load_usos()
@@ -1120,3 +1119,4 @@ async def removepasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app.add_handler(CommandHandler("addpasse", addpasse))
 app.add_handler(CommandHandler("removepasse", removepasse))
+app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
