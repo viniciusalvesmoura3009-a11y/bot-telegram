@@ -933,10 +933,16 @@ async def ytmp3(update, context):
         await update.message.reply_text("Uso: /ytmp3 <nome ou link do video>")
         return
     query = " ".join(context.args)
-    msg_id = update.message.message_id
-    if msg_id in PROCESSADOS:
+    msg_id = str(update.message.message_id)
+    usos = load_usos()
+    processados = usos.get("processados_ytmp3", [])
+    if msg_id in processados:
         return
-    PROCESSADOS.add(msg_id)
+    processados.append(msg_id)
+    if len(processados) > 100:
+        processados = processados[-100:]
+    usos["processados_ytmp3"] = processados
+    save_usos(usos)
     await update.message.reply_text("🎵 Processando áudio, aguarde...")
     try:
         resp = requests.get(f"https://fluxdevservice.com/api/download/ytmp3", params={"key": FRIFAS_KEY, "q": query}, timeout=55)
