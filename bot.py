@@ -1072,7 +1072,21 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
             jogador = data.get("jogador", {})
             nick = jogador.get("nickname", player_id)
             nivel = jogador.get("level", "?")
-            await update.message.reply_text(f"✅ Passe enviado!\n👤 Jogador: {nick}\n⭐ Nível: {nivel}")
+            from datetime import datetime, timezone, timedelta
+            agora = datetime.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M")
+            msg = (
+                f"✅ Passe enviado com sucesso!\n"
+                f"━━━━━━━━━━━━━━\n"
+                f"📦 Produto: Passe Booyah 🏷\n"
+                f"👤 Jogador: {nick}\n"
+                f"🆔 UID: {player_id}\n"
+                f"⭐ Nível: {nivel}\n"
+                f"📅 Data: {agora}\n"
+                f"━━━━━━━━━━━━━━\n"
+                f"🥇 𝗢𝗕𝗥𝗜𝗚𝗔𝗗𝗢 𝗣𝗘𝗟𝗔 𝗖𝗢𝗠𝗣𝗥𝗔!\n"
+                f"༒REBELDE ༒VENDAS"
+            )
+            await update.message.reply_text(msg)
         else:
             await update.message.reply_text(f"❌ {data.get('message', 'Erro ao enviar passe.')}")
     except Exception as e:
