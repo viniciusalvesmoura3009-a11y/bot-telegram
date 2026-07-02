@@ -954,7 +954,12 @@ async def ytmp3(update, context):
         else:
             await update.message.reply_text(f"❌ Erro: {data.get('message','Não foi possível processar')}")
     except Exception as e:
-        await update.message.reply_text(f"❌ Erro: {str(e)}")
+        erro_msg = await update.message.reply_text(f"❌ Erro: {str(e)}")
+        await asyncio.sleep(8)
+        try:
+            await erro_msg.delete()
+        except Exception:
+            pass
 
 async def ytmp4(update, context):
     uid = str(update.message.from_user.id)
