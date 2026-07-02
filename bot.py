@@ -1042,7 +1042,41 @@ async def rebaixa(update, context):
 
 app.add_handler(CommandHandler("promove", promove))
 app.add_handler(CommandHandler("rebaixa", rebaixa))
+app.add_handler(CommandHandler("passe", passe))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 
 # fix
+
+async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /passe <uid>")
+        return
+    player_id = context.args[0]
+    await update.message.reply_text("📦 Enviando passe, aguarde...")
+    try:
+        resp = requests.post(
+            "https://storcktec.com.br/api/v1/order",
+            headers={
+                "X-API-Token": STORCKTEC_TOKEN,
+                "X-API-Senha": STORCKTEC_SENHA,
+                "Content-Type": "application/json"
+            },
+            json={"player_id": player_id, "mensagem": "Aproveite seu passe! 🚀"},
+            timeout=30
+        )
+        data = resp.json()
+        if data.get("success"):
+            jogador = data.get("jogador", {})
+            nick = jogador.get("nickname", player_id)
+            nivel = jogador.get("level", "?")
+            await update.message.reply_text(f"✅ Passe enviado!\n👤 Jogador: {nick}\n⭐ Nível: {nivel}")
+        else:
+            await update.message.reply_text(f"❌ {data.get('message', 'Erro ao enviar passe.')}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+
