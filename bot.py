@@ -22,6 +22,8 @@ from telegram import Update, ChatPermissions
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
 
 FRIFAS_KEY = "71373c8b-ab27-a581-39d9-1d586063d63a"
+STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
+STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
 BASE_URL = "https://fluxdevservice.com/api/frifas"
 DONO_ID = 7895922394
 USUARIOS_LIKES = set()
