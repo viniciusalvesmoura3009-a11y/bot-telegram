@@ -933,6 +933,10 @@ async def ytmp3(update, context):
         await update.message.reply_text("Uso: /ytmp3 <nome ou link do video>")
         return
     query = " ".join(context.args)
+    msg_id = update.message.message_id
+    if msg_id in PROCESSADOS:
+        return
+    PROCESSADOS.add(msg_id)
     await update.message.reply_text("🎵 Processando áudio, aguarde...")
     for tentativa in range(2):
         try:
@@ -1105,6 +1109,7 @@ def save_passe_usuarios(usuarios):
     save_usos(usos)
 
 PASSE_USUARIOS = load_passe_usuarios()
+PROCESSADOS = set()
 
 async def addpasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.message.from_user.id)
