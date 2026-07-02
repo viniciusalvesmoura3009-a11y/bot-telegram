@@ -945,7 +945,7 @@ async def ytmp3(update, context):
     save_usos(usos)
     await update.message.reply_text("🎵 Processando áudio, aguarde...")
     try:
-        resp = requests.get(f"https://fluxdevservice.com/api/download/ytmp3", params={"key": FRIFAS_KEY, "q": query}, timeout=55)
+        resp = requests.get(f"https://fluxdevservice.com/api/download/ytmp3", params={"key": FRIFAS_KEY, "q": query}, timeout=100)
         data = resp.json()
         if data.get("success"):
             d = data["data"]
@@ -969,7 +969,7 @@ async def ytmp4(update, context):
     query = " ".join(context.args)
     await update.message.reply_text("🎬 Processando vídeo, aguarde...")
     try:
-        resp = requests.get(f"https://fluxdevservice.com/api/download/ytmp4", params={"key": FRIFAS_KEY, "q": query}, timeout=55)
+        resp = requests.get(f"https://fluxdevservice.com/api/download/ytmp4", params={"key": FRIFAS_KEY, "q": query}, timeout=100)
         data = resp.json()
         if data.get("success"):
             d = data["data"]
