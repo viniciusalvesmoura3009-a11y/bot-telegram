@@ -1075,6 +1075,7 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not (data_info.get("success") or data_info.get("sucesso")):
         await update.message.reply_text("❌ Jogador não encontrado. Verifique o UID.")
         return
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     d = data_info["data"][0]["conta"]
     nick = d.get("nome_conta", "?")
     nivel = d.get("level", "?")
