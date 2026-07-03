@@ -1112,7 +1112,7 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "X-API-Senha": STORCKTEC_SENHA,
                     "Content-Type": "application/json"
                 },
-                json={"player_id": player_id, "mensagem": "BOM APROVEITO, REBELDE VENDAS AGRADECE"},
+                json={"player_id": player_id, "mensagem": "BOM APROVEITO, REBELDE VENDAS AGRADECE PELA COMPRA"},
                 timeout=30
             )
             data = resp.json()
