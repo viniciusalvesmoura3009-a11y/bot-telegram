@@ -1065,44 +1065,82 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /passe <uid>")
         return
     player_id = context.args[0]
-    await update.message.reply_text("📦 Enviando passe, aguarde...")
+    await update.message.reply_text("🔎 Buscando informações do jogador, aguarde...")
     try:
-        resp = requests.post(
-            "https://storcktec.com.br/api/v1/order",
-            headers={
-                "X-API-Token": STORCKTEC_TOKEN,
-                "X-API-Senha": STORCKTEC_SENHA,
-                "Content-Type": "application/json"
-            },
-            json={"player_id": player_id, "mensagem": "Aproveite seu passe! 🚀"},
-            timeout=30
-        )
-        data = resp.json()
-        if data.get("success"):
-            jogador = data.get("jogador", {})
-            nick = jogador.get("nickname", player_id)
-            nivel = jogador.get("level", "?")
-            from datetime import datetime, timezone, timedelta
-            agora = datetime.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M")
-            msg = (
-                f"✅ Passe enviado com sucesso!\n"
-                f"━━━━━━━━━━━━━━\n"
-                f"📦 Produto: Passe Booyah 🏷\n"
-                f"👤 Jogador: {nick}\n"
-                f"🆔 UID: {player_id}\n"
-                f"⭐ Nível: {nivel}\n"
-                f"📅 Data: {agora}\n"
-                f"━━━━━━━━━━━━━━\n"
-                f"🥇 𝗢𝗕𝗥𝗜𝗚𝗔𝗗𝗢 𝗣𝗘𝗟𝗔 𝗖𝗢𝗠𝗣𝗥𝗔!\n"
-                f"༒REBELDE ༒VENDAS"
+        resp_info = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": player_id}, timeout=30)
+        data_info = resp_info.json()
+    except Exception:
+        await update.message.reply_text("❌ Não foi possível verificar o jogador. Tente novamente.")
+        return
+    if not (data_info.get("success") or data_info.get("sucesso")):
+        await update.message.reply_text("❌ Jogador não encontrado. Verifique o UID.")
+        return
+    d = data_info["data"][0]["conta"]
+    nick = d.get("nome_conta", "?")
+    nivel = d.get("level", "?")
+    regiao = d.get("region", "?")
+    keyboard = [[
+        InlineKeyboardButton("✅ Confirmar", callback_data=f"passe_confirm_{player_id}"),
+        InlineKeyboardButton("❌ Cancelar", callback_data="passe_cancel")
+    ]]
+    markup = InlineKeyboardMarkup(keyboard)
+    msg = (
+        f"🎁 CONFIRMAR ENVIO PASSE BOOYAH\n\n"
+        f"👤 Nick: {nick}\n"
+        f"🆔 ID: {player_id}\n"
+        f"⭐ Level: {nivel}\n"
+        f"🌍 Região: {regiao}\n\n"
+        f"Confirma o envio do passe para esse jogador?"
+    )
+    await update.message.reply_text(msg, reply_markup=markup)
+
+async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "passe_cancel":
+        await query.edit_message_text("❌ Envio de passe cancelado.")
+        return
+    if query.data.startswith("passe_confirm_"):
+        player_id = query.data.replace("passe_confirm_", "")
+        await query.edit_message_text("📦 Enviando passe, aguarde...")
+        try:
+            resp = requests.post(
+                "https://storcktec.com.br/api/v1/order",
+                headers={
+                    "X-API-Token": STORCKTEC_TOKEN,
+                    "X-API-Senha": STORCKTEC_SENHA,
+                    "Content-Type": "application/json"
+                },
+                json={"player_id": player_id, "mensagem": "Aproveite seu passe! 🚀"},
+                timeout=30
             )
-            await update.message.reply_text(msg)
-        else:
-            await update.message.reply_text(f"❌ {data.get('message', 'Erro ao enviar passe.')}")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Erro: {str(e)}")
+            data = resp.json()
+            if data.get("success"):
+                jogador = data.get("jogador", {})
+                nick = jogador.get("nickname", player_id)
+                nivel = jogador.get("level", "?")
+                from datetime import datetime, timezone, timedelta
+                agora = datetime.now(timezone(timedelta(hours=-3))).strftime("%d/%m/%Y %H:%M")
+                msg = (
+                    f"✅ Passe enviado com sucesso!\n"
+                    f"━━━━━━━━━━━━━━━\n"
+                    f"📦 Produto: Passe Booyah 🎗\n"
+                    f"👤 Jogador: {nick}\n"
+                    f"🆔 UID: {player_id}\n"
+                    f"⭐ Nível: {nivel}\n"
+                    f"📅 Data: {agora}\n"
+                    f"━━━━━━━━━━━━━━━\n"
+                    f"🏅 OBRIGADO PELA COMPRA!\n"
+                    f"🥷REBELDE🥷VENDAS"
+                )
+                await query.edit_message_text(msg)
+            else:
+                await query.edit_message_text(f"❌ {data.get('message', 'Erro ao enviar passe.')}")
+        except Exception as e:
+            await query.edit_message_text(f"❌ Erro: {str(e)}")
 
 app.add_handler(CommandHandler("passe", passe))
+app.add_handler(CallbackQueryHandler(passe_callback, pattern="^passe_"))
 
 def load_passe_usuarios():
     usos = load_usos()
