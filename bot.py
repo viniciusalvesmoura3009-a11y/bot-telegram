@@ -1067,7 +1067,7 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     player_id = context.args[0]
     await update.message.reply_text("🔎 Buscando informações do jogador, aguarde...")
     try:
-        resp_info = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": player_id}, timeout=30)
+        resp_info = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": player_id}, timeout=40)
         data_info = resp_info.json()
     except Exception:
         await update.message.reply_text("❌ Não foi possível verificar o jogador. Tente novamente.")
