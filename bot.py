@@ -1132,7 +1132,7 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"📅 Data: {agora}\n"
                     f"━━━━━━━━━━━━━━━\n"
                     f"🏅 OBRIGADO PELA COMPRA!\n"
-                    f"🥷REBELDE🥷VENDAS"
+                    f"༒REBELDE༒ VENDAS"
                 )
                 await query.edit_message_text(msg)
             else:
