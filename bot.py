@@ -1141,6 +1141,43 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(f"❌ Erro: {str(e)}")
 
 app.add_handler(CommandHandler("passe", passe))
+
+async def consultarpasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /consultarpasse <uid>")
+        return
+    player_id = context.args[0]
+    await update.message.reply_text("🔎 Consultando, aguarde...")
+    try:
+        resp = requests.get(
+            f"https://storcktec.com.br/api/v1/consultar/{player_id}",
+            headers={"X-API-Token": STORCKTEC_TOKEN, "X-API-Senha": STORCKTEC_SENHA},
+            timeout=30
+        )
+        data = resp.json()
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+        return
+    if data.get("success"):
+        msg = (
+            f"🔍 CONSULTA DE JOGADOR\n\n"
+            f"👤 Nick: {data.get('nickname', '?')}\n"
+            f"🆔 ID: {player_id}\n"
+            f"⭐ Level: {data.get('level', '?')}\n"
+            f"❤️ Likes: {data.get('likes', '?')}\n"
+            f"🌍 Região: {data.get('regiao', '?')}"
+        )
+        await update.message.reply_text(msg)
+    else:
+        await update.message.reply_text(f"❌ {data.get('message', 'ID não encontrado.')}")
+
+app.add_handler(CommandHandler("consultarpasse", consultarpasse))
+
+
 app.add_handler(CallbackQueryHandler(passe_callback, pattern="^passe_"))
 
 def load_passe_usuarios():
