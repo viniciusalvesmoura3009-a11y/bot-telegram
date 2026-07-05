@@ -691,7 +691,7 @@ app.add_handler(CommandHandler("removeautolike", removeautolike))
 app.add_handler(CommandHandler("addbio", addbio))
 app.add_handler(CommandHandler("removebio", removebio))
 app.add_handler(CommandHandler("menu", menu))
-app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
+app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu_|cmd_)"))
 app.add_handler(CommandHandler("ban", ban))
 
 import json
