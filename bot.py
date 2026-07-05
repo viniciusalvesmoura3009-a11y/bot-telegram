@@ -19,13 +19,102 @@ import asyncio
 import time
 time.sleep(5)
 from telegram import Update, ChatPermissions
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler, ApplicationHandlerStop
 
 FRIFAS_KEY = "71373c8b-ab27-a581-39d9-1d586063d63a"
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
 BASE_URL = "https://fluxdevservice.com/api/frifas"
 DONO_ID = 7895922394
+GRUPO_PRINCIPAL = -1003789672313
+
+def load_grupos_autorizados():
+    return set(usos.get("grupos_autorizados", []))
+
+def save_grupos_autorizados(grupos):
+    usos["grupos_autorizados"] = list(grupos)
+    save_usos(usos)
+
+GRUPOS_AUTORIZADOS = load_grupos_autorizados()
+
+async def checar_grupo_autorizado(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    if chat is None or chat.type == "private":
+        return True
+    chat_id = chat.id
+    if chat_id == GRUPO_PRINCIPAL or chat_id in GRUPOS_AUTORIZADOS:
+        return True
+    try:
+        await context.bot.send_message(chat_id, "❌ Este bot não está autorizado a funcionar neste grupo.")
+        await context.bot.leave_chat(chat_id)
+    except Exception:
+        pass
+    return False
+
+async def addgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /addgrupo <id_do_grupo>")
+        return
+    try:
+        gid = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("ID inválido.")
+        return
+    GRUPOS_AUTORIZADOS.add(gid)
+    save_grupos_autorizados(GRUPOS_AUTORIZADOS)
+    await update.message.reply_text(f"✅ Grupo {gid} autorizado.")
+
+async def removergrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removergrupo <id_do_grupo>")
+        return
+    try:
+        gid = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("ID inválido.")
+        return
+    GRUPOS_AUTORIZADOS.discard(gid)
+    save_grupos_autorizados(GRUPOS_AUTORIZADOS)
+    try:
+        await context.bot.send_message(gid, "❌ Este bot foi desautorizado deste grupo.")
+        await context.bot.leave_chat(gid)
+    except Exception:
+        pass
+    await update.message.reply_text(f"✅ Grupo {gid} removido e bot saiu de lá.")
+
+async def checkgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    linhas = [f"🏠 Principal: {GRUPO_PRINCIPAL}"]
+    for gid in GRUPOS_AUTORIZADOS:
+        try:
+            chat = await context.bot.get_chat(gid)
+            nome = chat.title or "Sem nome"
+        except Exception:
+            nome = "Desconhecido"
+        linhas.append(f"{nome}: {gid}")
+    msg = "📋 Grupos usando o bot:\n\n" + "\n".join(linhas)
+    await update.message.reply_text(msg)
+
+app.add_handler(CommandHandler("addgrupo", addgrupo))
+app.add_handler(CommandHandler("removergrupo", removergrupo))
+app.add_handler(CommandHandler("checkgrupo", checkgrupo))
+
+async def filtro_grupo_global(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    autorizado = await checar_grupo_autorizado(update, context)
+    if not autorizado:
+        raise ApplicationHandlerStop
+
+app.add_handler(MessageHandler(filters.ALL, filtro_grupo_global), group=-1)
+
+
 USUARIOS_LIKES = set()
 
 def load_likes_usuarios():
