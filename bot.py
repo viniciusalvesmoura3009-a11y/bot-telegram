@@ -29,20 +29,23 @@ DONO_ID = 7895922394
 GRUPO_PRINCIPAL = -1003789672313
 
 def load_grupos_autorizados():
-    return set(usos.get("grupos_autorizados", []))
+    u = load_usos()
+    return set(u.get("grupos_autorizados", []))
 
 def save_grupos_autorizados(grupos):
-    usos["grupos_autorizados"] = list(grupos)
-    save_usos(usos)
+    u = load_usos()
+    u["grupos_autorizados"] = list(grupos)
+    save_usos(u)
 
-GRUPOS_AUTORIZADOS = load_grupos_autorizados()
+GRUPOS_AUTORIZADOS = set()
 
 async def checar_grupo_autorizado(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat is None or chat.type == "private":
         return True
     chat_id = chat.id
-    if chat_id == GRUPO_PRINCIPAL or chat_id in GRUPOS_AUTORIZADOS:
+    grupos_atuais = load_grupos_autorizados()
+    if chat_id == GRUPO_PRINCIPAL or chat_id in grupos_atuais:
         return True
     try:
         await context.bot.send_message(chat_id, "❌ Este bot não está autorizado a funcionar neste grupo.")
@@ -63,8 +66,9 @@ async def addgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("ID inválido.")
         return
-    GRUPOS_AUTORIZADOS.add(gid)
-    save_grupos_autorizados(GRUPOS_AUTORIZADOS)
+    grupos_atuais = load_grupos_autorizados()
+    grupos_atuais.add(gid)
+    save_grupos_autorizados(grupos_atuais)
     await update.message.reply_text(f"✅ Grupo {gid} autorizado.")
 
 async def removergrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -79,8 +83,9 @@ async def removergrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("ID inválido.")
         return
-    GRUPOS_AUTORIZADOS.discard(gid)
-    save_grupos_autorizados(GRUPOS_AUTORIZADOS)
+    grupos_atuais = load_grupos_autorizados()
+    grupos_atuais.discard(gid)
+    save_grupos_autorizados(grupos_atuais)
     try:
         await context.bot.send_message(gid, "❌ Este bot foi desautorizado deste grupo.")
         await context.bot.leave_chat(gid)
@@ -92,8 +97,9 @@ async def checkgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != DONO_ID:
         await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
         return
+    grupos_atuais = load_grupos_autorizados()
     linhas = [f"🏠 Principal: {GRUPO_PRINCIPAL}"]
-    for gid in GRUPOS_AUTORIZADOS:
+    for gid in grupos_atuais:
         try:
             chat = await context.bot.get_chat(gid)
             nome = chat.title or "Sem nome"
