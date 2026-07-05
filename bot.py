@@ -1177,6 +1177,13 @@ async def consultarpasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app.add_handler(CommandHandler("consultarpasse", consultarpasse))
 
+async def idgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"🆔 ID deste chat: {update.effective_chat.id}")
+
+app.add_handler(CommandHandler("idgrupo", idgrupo))
+
+
+
 
 app.add_handler(CallbackQueryHandler(passe_callback, pattern="^passe_"))
 
