@@ -1323,7 +1323,12 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 json={"player_id": player_id, "mensagem": "BOM APROVEITO, REBELDE VENDAS AGRADECE PELA COMPRA"},
                 timeout=30
             )
-            data = resp.json()
+            if resp.status_code != 200 or not resp.text.strip():
+                raise Exception(f"API fora do ar (status {resp.status_code}): {resp.text[:200] or 'resposta vazia'}")
+            try:
+                data = resp.json()
+            except ValueError:
+                raise Exception(f"API retornou algo inválido (status {resp.status_code}): {resp.text[:200]}")
             if data.get("success"):
                 jogador = data.get("jogador", {})
                 nick = jogador.get("nickname", player_id)
