@@ -832,6 +832,59 @@ async def list_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Erro: {data.get('status')}")
 
 app.add_handler(CommandHandler("infoopen", info_open))
+
+async def likess(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid_user = str(update.message.from_user.id)
+    if uid_user != str(DONO_ID):
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /likess <uid>")
+        return
+    uid = context.args[0]
+    msg_status = await update.message.reply_text("🚀 Enviando likes em lote, aguarde...")
+    total_enviados = 0
+    tentativas = 0
+    max_tentativas = 15
+    nome_conta = uid
+    likes_antes = None
+    likes_depois = None
+    while tentativas < max_tentativas:
+        tentativas += 1
+        try:
+            resp = requests.get(f"{BASE_URL}/sendlikes", params={"key": FRIFAS_KEY, "id": uid}, timeout=1200)
+            data = resp.json()
+        except Exception as e:
+            break
+        if data.get("sucesso") or data.get("success"):
+            d = data["data"][0]
+            nome_conta = d["conta"]["nome_conta"]
+            if likes_antes is None:
+                likes_antes = d["likes"]["antes"]
+            likes_depois = d["likes"]["depois"]
+            total_enviados += d["likes"]["enviadas"]
+        else:
+            msg_erro = data.get("mensagem", data.get("message", ""))
+            if "REQUEST_BLOCKED" in str(data.get("status", "")) or "blocked" in str(msg_erro).lower():
+                break
+            else:
+                break
+        await asyncio.sleep(2)
+    if total_enviados > 0:
+        msg = (
+            f"✅ Likes enviados em lote!\n"
+            f"👤 {nome_conta}\n"
+            f"🆔 UID: {uid}\n"
+            f"❤️ Antes: {likes_antes} → Depois: {likes_depois}\n"
+            f"📤 Total enviado: {total_enviados}\n"
+            f"🔁 Chamadas realizadas: {tentativas}"
+        )
+        await msg_status.edit_text(msg)
+    else:
+        await msg_status.edit_text("❌ Não foi possível enviar likes em lote. O UID pode já ter atingido o limite de 24h.")
+
+app.add_handler(CommandHandler("likess", likess))
+
 app.add_handler(CommandHandler("listopen", list_open))
 
 app.add_handler(CommandHandler("bio", update_bio))
