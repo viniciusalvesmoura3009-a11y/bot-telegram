@@ -775,6 +775,65 @@ async def post_init(application):
 
 app.post_init = post_init
 app.add_handler(CommandHandler("likes", send_likes))
+
+async def info_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /infoopen <access_id>")
+        return
+    access_id = context.args[0]
+    try:
+        resp = requests.get(f"{BASE_URL}/info-open", params={"key": FRIFAS_KEY, "access_id": access_id}, timeout=30)
+        data = resp.json()
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+        return
+    if data.get("sucesso"):
+        d = data["data"]
+        await update.message.reply_text(
+            f"📊 Info do Open\n"
+            f"🆔 ID: {d['access_id']}\n"
+            f"👥 Contas: {d['contas_registradas']}/{d['max_contas']}\n"
+            f"✅ Ativas: {d['contas_ativas']} | Concluídas: {d['contas_concluidas']}\n"
+            f"🔗 {d['checkpage_url']}"
+        )
+    else:
+        await update.message.reply_text(f"❌ Erro: {data.get('status')}")
+
+async def list_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /listopen <access_id>")
+        return
+    access_id = context.args[0]
+    try:
+        resp = requests.get(f"{BASE_URL}/list-open", params={"key": FRIFAS_KEY, "access_id": access_id}, timeout=30)
+        data = resp.json()
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+        return
+    if data.get("sucesso"):
+        contas = data["data"]
+        msg = f"📋 Contas no Open ({len(contas)}):\n\n"
+        for c in contas:
+            msg += (
+                f"👤 {c['conta']['player']} | {c['conta']['uid']}\n"
+                f"❤️ Enviados: {c['likes']['enviados']} | "
+                f"Dias restantes: {c['progresso']['dias_restantes']}\n\n"
+            )
+        await update.message.reply_text(msg)
+    else:
+        await update.message.reply_text(f"❌ Erro: {data.get('status')}")
+
+app.add_handler(CommandHandler("infoopen", info_open))
+app.add_handler(CommandHandler("listopen", list_open))
+
 app.add_handler(CommandHandler("bio", update_bio))
 app.add_handler(CommandHandler("cadastrar", cadastrar))
 app.add_handler(CommandHandler("info", info_player))
