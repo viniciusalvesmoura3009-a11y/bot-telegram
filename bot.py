@@ -1418,6 +1418,7 @@ async def agendar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("Uso: /agendar <uid>")
         return
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     player_id = context.args[0]
     await update.message.reply_text("🔍 Buscando informações do jogador, aguarde...")
     try:
