@@ -1543,6 +1543,51 @@ async def listagenda(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app.add_handler(CommandHandler("listagenda", listagenda))
 
+async def estoque(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    await update.message.reply_text("🔍 Consultando estoque, aguarde...")
+    try:
+        resp = requests.get(
+            "https://storcktec.com.br/api/v1/produtos",
+            headers={
+                "X-API-Token": STORCKTEC_TOKEN,
+                "X-API-Senha": STORCKTEC_SENHA
+            },
+            timeout=30
+        )
+        if resp.status_code != 200 or not resp.text.strip():
+            raise Exception(f"API fora do ar (status {resp.status_code}): {resp.text[:200] or 'resposta vazia'}")
+        try:
+            data = resp.json()
+        except ValueError:
+            raise Exception(f"API retornou algo inválido (status {resp.status_code}): {resp.text[:200]}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+        return
+
+    passes_disponiveis = data.get("passes_disponiveis", "?")
+    custo_passe = 6.00
+    produtos = data.get("produtos", [])
+
+    msg = (
+        f"📦 ESTOQUE E PREÇOS\n"
+        f"━━━━━━━━━━━━━━\n"
+        f"🎫 Passes disponíveis: {passes_disponiveis}\n"
+        f"💰 Preço por passe: R${custo_passe:.2f}\n"
+        f"━━━━━━━━━━━━━━\n"
+    )
+    for p in produtos:
+        disp = "✅ Disponível" if p.get("disponivel") else "❌ Indisponível"
+        msg += f"SKU: {p.get('sku', '?')} | Preço: R${custo_passe:.2f} | {disp}\n"
+
+    await update.message.reply_text(msg)
+
+app.add_handler(CommandHandler("estoque", estoque))
+
+
 
 
 def load_passe_usuarios():
