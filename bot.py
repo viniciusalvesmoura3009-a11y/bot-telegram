@@ -1489,6 +1489,61 @@ async def agendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app.add_handler(CommandHandler("agendar", agendar))
 app.add_handler(CallbackQueryHandler(agendar_callback, pattern="^agendar_"))
 
+async def listagenda(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    await update.message.reply_text("🔍 Consultando agendamentos, aguarde...")
+    try:
+        resp = requests.get(
+            "https://storcktec.com.br/api/v1/agendamentos",
+            headers={
+                "X-API-Token": STORCKTEC_TOKEN,
+                "X-API-Senha": STORCKTEC_SENHA
+            },
+            timeout=30
+        )
+        if resp.status_code != 200 or not resp.text.strip():
+            raise Exception(f"API fora do ar (status {resp.status_code}): {resp.text[:200] or 'resposta vazia'}")
+        try:
+            data = resp.json()
+        except ValueError:
+            raise Exception(f"API retornou algo inválido (status {resp.status_code}): {resp.text[:200]}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+        return
+
+    agendamentos = data.get("agendamentos", [])
+    if not agendamentos:
+        await update.message.reply_text("📅 Nenhum agendamento encontrado.")
+        return
+
+    emojis_status = {
+        "AGENDADO": "🕒",
+        "ENVIADO": "✅",
+        "ESTORNADO": "💸",
+        "FALHA": "❌"
+    }
+
+    msg = "📅 LISTA DE AGENDAMENTOS\n━━━━━━━━━━━━━━\n"
+    for a in agendamentos:
+        status = a.get("status", "?")
+        emoji = emojis_status.get(status, "❔")
+        msg += (
+            f"{emoji} ID: {a.get('id', '?')}\n"
+            f"   UID: {a.get('uid_ff', '?')}\n"
+            f"   Custo: R${a.get('custo', '?')}\n"
+            f"   Status: {status}\n"
+            f"━━━━━━━━━━━━━━\n"
+        )
+
+    for i in range(0, len(msg), 4000):
+        await update.message.reply_text(msg[i:i+4000])
+
+app.add_handler(CommandHandler("listagenda", listagenda))
+
+
 
 def load_passe_usuarios():
     usos = load_usos()
