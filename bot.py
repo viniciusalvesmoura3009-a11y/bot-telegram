@@ -509,6 +509,11 @@ async def mostrar_pagina_menu(update, context, pagina):
                 ("➕ /addlikes", "cmd_addlikes"),
                 ("➖ /removelikes", "cmd_removelikes"),
                 ("📋 /listautolike", "cmd_listautolike"),
+                ("🎁 /passe", "cmd_passe"),
+                ("🔍 /consultarpasse", "cmd_consultarpasse"),
+                ("📅 /agendar", "cmd_agendar"),
+                ("📋 /listagenda", "cmd_listagenda"),
+                ("📦 /estoque", "cmd_estoque"),
             ]
         },
         2: {
@@ -591,6 +596,11 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "cmd_token": ("🎁 /token", "Acesse o link para pegar seu token.\n\nUse:\n/token"),
         "cmd_tabela": ("💰 /tabela", "Ver tabela de preços de likes.\n\nUse:\n/tabela"),
         "cmd_abrgrupo": ("🔓 /abrgrupo", "Abre o grupo.\n\nComo usar:\n/abrgrupo"),
+        "cmd_passe": ("🎁 /passe", "Envia um passe Booyah.\n\nComo usar:\n/passe <uid>"),
+        "cmd_consultarpasse": ("🔍 /consultarpasse", "Consulta dados de um jogador para passe.\n\nComo usar:\n/consultarpasse <uid>"),
+        "cmd_agendar": ("📅 /agendar", "Agenda um passe para o próximo dia 01.\n\nComo usar:\n/agendar <uid>"),
+        "cmd_listagenda": ("📋 /listagenda", "Lista todos os agendamentos ativos."),
+        "cmd_estoque": ("📦 /estoque", "Mostra o estoque e preço atual do passe."),
     }
     if data.startswith("menu_"):
         pagina = int(data.split("_")[1])
