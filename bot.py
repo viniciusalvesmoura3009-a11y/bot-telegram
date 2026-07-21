@@ -21,7 +21,7 @@ time.sleep(5)
 from telegram import Update, ChatPermissions
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler, ApplicationHandlerStop
 
-FRIFAS_KEY = "71373c8b-ab27-a581-39d9-1d586063d63a"
+FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
 BASE_URL = "https://fluxdevservice.com/api/frifas"
