@@ -1488,8 +1488,8 @@ async def agendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"🆔 UID: {player_id}\n"
                     f"⭐ Nível: {nivel}\n"
                     f"━━━━━━━━━━━━━━\n"
-                    f"🏵️ OBRIGADO PELA COMPRA!\n"
-                    f"⚔️REBELDE⚔️ VENDAS"
+                    f"💎 OBRIGADO PELA COMPRA!\n"
+                    f"༒REBELDE༒ VENDAS"
                 )
                 await query.edit_message_text(msg)
             else:
