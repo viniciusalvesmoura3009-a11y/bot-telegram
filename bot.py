@@ -1544,7 +1544,7 @@ async def listagenda(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg += (
             f"{emoji} ID: {a.get('id', '?')}\n"
             f"   UID: {a.get('uid_ff', '?')}\n"
-            f"   Custo: R${a.get('custo', '?')}\n"
+                f"   Custo: R$6.00\n"
             f"   Status: {status}\n"
             f"━━━━━━━━━━━━━━\n"
         )
