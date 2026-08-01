@@ -198,7 +198,7 @@ async def send_likes(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("❌ Seu VIP expirou ou voce nao tem VIP ativo!\n\nEntre em contato com o dono para renovar.\n☎ (82) 98863-1900 WhatsApp")
                 return
     if not context.args:
-        await update.message.reply_text("Uso: /likes <uid>")
+        await update.message.reply_text("Uso: /like <uid>")
         return
     uid = context.args[0]
     resp = requests.get(f"{BASE_URL}/sendlikes", params={"key": FRIFAS_KEY, "id": uid})
@@ -426,7 +426,7 @@ async def addlikes(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /addlikes <id_telegram>")
         return
     USUARIOS_LIKES.add(int(context.args[0]))
-    await update.message.reply_text("Usuario " + context.args[0] + " pode usar /likes agora!")
+    await update.message.reply_text("Usuario " + context.args[0] + " pode usar /like agora!")
 
 async def removelikes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != DONO_ID:
@@ -496,7 +496,7 @@ async def mostrar_pagina_menu(update, context, pagina):
         1: {
             "titulo": "📋 *Menu — Página 1/3*\n👤 *Comandos do Usuário:*",
             "botoes": [
-                ("👍 /likes", "cmd_likes"),
+                ("👍 /like", "cmd_likes"),
                 ("🔄 /autolike", "cmd_autolike"),
                 ("⏹ /stopauto", "cmd_stopauto"),
                 ("📝 /bio", "cmd_bio"),
@@ -570,7 +570,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data
     descricoes = {
-        "cmd_likes": ("👍 /likes", "Envia likes para um jogador.\n\nComo usar:\n/likes <uid>\n\nExemplo:\n/likes 2031944584"),
+        "cmd_likes": ("👍 /like", "Envia likes para um jogador.\n\nComo usar:\n/like <uid>\n\nExemplo:\n/like 2031944584"),
         "cmd_addlikes": ("➕ /addlikes", "Libera um usuário para usar likes.\n\nComo usar:\n/addlikes <id_telegram>"),
         "cmd_removelikes": ("➖ /removelikes", "Remove o acesso de um usuário aos likes.\n\nComo usar:\n/removelikes <id_telegram>"),
         "cmd_autolike": ("🔄 /autolike", "Ativa o autolike diário.\n\nComo usar:\n/autolike <uid>\n\nExemplo:\n/autolike 2031944584"),
