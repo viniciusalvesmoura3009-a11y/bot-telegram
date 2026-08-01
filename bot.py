@@ -1662,21 +1662,38 @@ async def like_command(update, context):
     region = context.args[1] if len(context.args) > 1 else "BR"
     await update.message.reply_text("⏳ Enviando likes...")
     resultado = enviar_like(uid, region)
-    if not resultado.get("sucesso"):
-        await update.message.reply_text(f"❌ Erro ao enviar likes: {resultado}")
+
+    if resultado.get("sucesso"):
+        msg = (
+            f"✅ *Likes enviados com sucesso!*\n\n"
+            f"👤 Nick: `{resultado['nickname']}`\n"
+            f"🆔 UID: `{resultado['uid']}`\n"
+            f"🌎 Região: {resultado['regiao']}\n\n"
+            f"❤️ Likes antes: {resultado['likes_antes']}\n"
+            f"➕ Enviados agora: {resultado['likes_enviados']}\n"
+            f"❤️ Likes depois: {resultado['likes_depois']}\n\n"
+            f"📊 Uso hoje: {resultado['uso_hoje']}/{resultado['limite_diario']} "
+            f"(restam {resultado['restantes_hoje']})"
+        )
+        await update.message.reply_text(msg, parse_mode="Markdown")
         return
-    msg = (
-        f"✅ *Likes enviados com sucesso!*\n\n"
-        f"👤 Nick: `{resultado['nickname']}`\n"
-        f"🆔 UID: `{resultado['uid']}`\n"
-        f"🌎 Região: {resultado['regiao']}\n\n"
-        f"❤️ Likes antes: {resultado['likes_antes']}\n"
-        f"➕ Enviados agora: {resultado['likes_enviados']}\n"
-        f"❤️ Likes depois: {resultado['likes_depois']}\n\n"
-        f"📊 Uso hoje: {resultado['uso_hoje']}/{resultado['limite_diario']} "
-        f"(restam {resultado['restantes_hoje']})"
-    )
-    await update.message.reply_text(msg, parse_mode="Markdown")
+
+    erro = resultado.get("erro", "desconhecido")
+    mensagens_erro = {
+        "limite_diario": "⛔ Limite diário de likes atingido. Tenta amanhã!",
+        "id_nao_encontrado": "❌ Esse ID de jogador não existe.",
+        "ja_enviado": "⚠️ Esse ID já recebeu likes hoje. Tenta mais tarde.",
+        "em_processamento": "⏳ Esse ID já está sendo processado. Aguarda um pouco.",
+        "uid_invalido": "❌ ID inválido. Manda só números.",
+        "sem_chave": "🔑 Erro de configuração (API key ausente). Avisa o admin.",
+        "chave_invalida": "🔑 Erro de configuração (API key inválida). Avisa o admin.",
+        "sem_plano": "❌ Sem plano ativo na API de likes. Avisa o admin.",
+        "servidor_lotado": "🔄 Servidor de likes ocupado. Tenta de novo em instantes.",
+        "falha": "⚠️ Falha temporária no envio. Tenta de novo.",
+        "timeout": "⏱️ O envio demorou demais. Tenta de novo.",
+    }
+    texto = mensagens_erro.get(erro, f"❌ Erro: {resultado.get('mensagem', erro)}")
+    await update.message.reply_text(texto)
 
 app.add_handler(CommandHandler("like", like_command))
 
