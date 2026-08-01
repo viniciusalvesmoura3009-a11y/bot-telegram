@@ -1641,4 +1641,43 @@ async def removepasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app.add_handler(CommandHandler("addpasse", addpasse))
 app.add_handler(CommandHandler("removepasse", removepasse))
+
+FREEFIRE_API_KEY = "vl_33b37278a62449f959435a41a2370df6d324dda27c4409bd"
+
+def enviar_like(uid, region="BR"):
+    url = "https://like200.freefiredrop/api/v1/enviar"
+    params = {"key": FREEFIRE_API_KEY, "uid": uid, "region": region}
+    try:
+        response = requests.get(url, params=params, timeout=15)
+        return response.json()
+    except Exception as e:
+        return {"erro": str(e)}
+
+
+async def like_command(update, context):
+    if not context.args:
+        await update.message.reply_text("Uso: /like <ID_DO_JOGADOR>")
+        return
+    uid = context.args[0]
+    region = context.args[1] if len(context.args) > 1 else "BR"
+    await update.message.reply_text("⏳ Enviando likes...")
+    resultado = enviar_like(uid, region)
+    if not resultado.get("sucesso"):
+        await update.message.reply_text(f"❌ Erro ao enviar likes: {resultado}")
+        return
+    msg = (
+        f"✅ *Likes enviados com sucesso!*\n\n"
+        f"👤 Nick: `{resultado['nickname']}`\n"
+        f"🆔 UID: `{resultado['uid']}`\n"
+        f"🌎 Região: {resultado['regiao']}\n\n"
+        f"❤️ Likes antes: {resultado['likes_antes']}\n"
+        f"➕ Enviados agora: {resultado['likes_enviados']}\n"
+        f"❤️ Likes depois: {resultado['likes_depois']}\n\n"
+        f"📊 Uso hoje: {resultado['uso_hoje']}/{resultado['limite_diario']} "
+        f"(restam {resultado['restantes_hoje']})"
+    )
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+app.add_handler(CommandHandler("like", like_command))
+
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
