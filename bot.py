@@ -1588,15 +1588,18 @@ async def like_command(update, context):
 
     if resultado.get("sucesso"):
         msg = (
-            f"✅ *Likes enviados com sucesso!*\n\n"
-            f"👤 Nick: `{resultado['nickname']}`\n"
-            f"🆔 UID: `{resultado['uid']}`\n"
-            f"🌎 Região: {resultado['regiao']}\n\n"
-            f"❤️ Likes antes: {resultado['likes_antes']}\n"
-            f"➕ Enviados agora: {resultado['likes_enviados']}\n"
-            f"❤️ Likes depois: {resultado['likes_depois']}\n\n"
+            f"╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n"
+            f"│  ✅️ LIKES ENVIADOS  COM SUCESSO 👍\n"
+            f"╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n"
+            f"│  👤 Jogador: {resultado['nickname']}\n"
+            f"│  🆔 UID: {resultado['uid']}\n"
+            f"│ 🌎 Região: {resultado['regiao']}\n"
+            f"│  📈 Likes antes: {resultado['likes_antes']}\n"
+            f"│  🚀 Enviados agora: {resultado['likes_enviados']}\n"
+            f"│  ✅ Likes  Depois: {resultado['likes_depois']}\n\n"
             f"📊 Uso hoje: {resultado['uso_hoje']}/{resultado['limite_diario']} "
-            f"(restam {resultado['restantes_hoje']})"
+            f"(restam {resultado['restantes_hoje']})\n\n"
+            f"🔱 Dono: ༒REBELDE ༒VENDAS"
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
         return
