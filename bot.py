@@ -1586,5 +1586,6 @@ async def like_command(update, context):
     await update.message.reply_text(texto)
 
 app.add_handler(CommandHandler("like", like_command))
+    app.add_handler(CommandHandler("menu", menu))
 
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
