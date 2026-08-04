@@ -1578,6 +1578,15 @@ def enviar_like(uid, region="BR"):
 
 
 async def like_command(update, context):
+    if update.message.from_user.id != DONO_ID:
+        valido, restantes, motivo = checar_vip(str(update.message.from_user.id))
+        if not valido:
+            if motivo == "limite":
+                await update.message.reply_text("🚫 Limite diario atingido!\n\nVoce ja usou todos os seus IDs disponiveis hoje. Volte amanha para usar novamente.")
+                return
+            else:
+                await update.message.reply_text("❌ Seu VIP expirou ou voce nao tem VIP ativo!\n\nEntre em contato com o dono para renovar.\n📱 (82) 98863-1900 WhatsApp")
+                return
     if not context.args:
         await update.message.reply_text("Uso: /like <ID_DO_JOGADOR>")
         return
