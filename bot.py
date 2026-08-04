@@ -557,6 +557,15 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "cmd_agendar": ("📅 /agendar", "Agenda um passe para o próximo dia 01.\n\nComo usar:\n/agendar <uid>"),
         "cmd_listagenda": ("📋 /listagenda", "Lista todos os agendamentos ativos."),
         "cmd_estoque": ("📦 /estoque", "Mostra o estoque e preço atual do passe."),
+        "cmd_likes": ("👍 /like", "Envia likes para um jogador.\n\nComo usar:\n/like <uid>"),
+        "cmd_autolike": ("🔄 /autolike", "Ativa auto-like diário.\n\nComo usar:\n/autolike <dias>"),
+        "cmd_stopauto": ("🛢 /stopauto", "Para o auto-like ativo.\n\nComo usar:\n/stopauto"),
+        "cmd_bio": ("📝 /bio", "Configura sua bio/token.\n\nComo usar:\n/bio <link ou token>"),
+        "cmd_addlikes": ("➕ /addlikes", "Adiciona likes manualmente.\n\nComo usar:\n/addlikes <uid> <quantidade>"),
+        "cmd_removelikes": ("➖ /removelikes", "Remove likes manualmente.\n\nComo usar:\n/removelikes <uid> <quantidade>"),
+        "cmd_stats": ("📈 /stats", "Mostra estatísticas gerais do bot."),
+        "cmd_usosgeral": ("📊 /usosgeral", "Mostra o uso geral de todos os usuários."),
+        "cmd_removebio": ("🎬 /removebio", "Remove sua bio/token cadastrado."),
     }
     if data.startswith("menu_"):
         pagina = int(data.split("_")[1])
