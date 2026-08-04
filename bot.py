@@ -1568,7 +1568,7 @@ app.add_handler(CommandHandler("removepasse", removepasse))
 FREEFIRE_API_KEY = "vl_33b37278a62449f959435a41a2370df6d324dda27c4409bd"
 
 def enviar_like(uid, region="BR"):
-    url = "https://like200.freefiredrop/api/v1/enviar"
+    url = "https://Like200.soyxapasse.com.br/api/v1/enviar"
     params = {"key": FREEFIRE_API_KEY, "uid": uid, "region": region}
     try:
         response = requests.get(url, params=params, timeout=15)
