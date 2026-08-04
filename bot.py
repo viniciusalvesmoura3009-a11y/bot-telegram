@@ -186,50 +186,6 @@ async def usosgeral(update, context):
     total = total_likes_hoje()
     await update.message.reply_text(f"📊 Likes usados hoje: {total}")
 
-async def send_likes(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-    if update.message.from_user.id != DONO_ID:
-        valido, restantes, motivo = checar_vip(str(update.message.from_user.id))
-        if not valido:
-            if motivo == "limite":
-                await update.message.reply_text("🚫 Limite diario atingido!\n\nVoce ja usou todos os seus IDs disponiveis hoje. Volte amanha para usar novamente.")
-                return
-            else:
-                await update.message.reply_text("❌ Seu VIP expirou ou voce nao tem VIP ativo!\n\nEntre em contato com o dono para renovar.\n☎ (82) 98863-1900 WhatsApp")
-                return
-    if not context.args:
-        await update.message.reply_text("Uso: /like <uid>")
-        return
-    uid = context.args[0]
-    resp = requests.get(f"{BASE_URL}/sendlikes", params={"key": FRIFAS_KEY, "id": uid})
-    data = resp.json()
-    if data.get("success") or data.get("sucesso"):
-        d = data["data"][0]
-        qtd_uso = contar_uso(update.message.from_user.id)
-        contar_like()
-        if update.message.from_user.id != DONO_ID:
-            incrementar_uso_vip(str(update.message.from_user.id))
-        msg = (
-"╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n"
-"│  👍 LIKES ENVIADOS  —  REBELDE – FF\n"
-"╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n"
-"│  👤 Jogador: " + str(d["conta"]["nome_conta"]) + "\n"
-"│  🆔 UID: " + str(d["conta"]["id_conta"]) + "\n"
-"│  📈 Antes: " + str(d["likes"]["antes"]) + "\n"
-"│  🚀 Enviados: " + str(d["likes"]["enviadas"]) + "\n"
-"│  ✅ Depois: " + str(d["likes"]["depois"]) + "\n\n"
-
-"🔱 Dono: ༒REBELDE ༒VENDAS"
-)
-        await update.message.reply_text(msg)
-    else:
-        msg_erro = data.get("message", "Erro desconhecido")
-        if "REQUEST_BLOCKED" in str(msg_erro) or "blocked" in str(msg_erro).lower():
-            await update.message.reply_text("⛔ Limite diário atingido!\n\nOs likes serão enviados amanhã quando a cota resetar. Aguarde!")
-        else:
-            await update.message.reply_text("Falha no envio de likes\n\nMensagem: " + str(msg_erro) + "\n\nTente novamente mais tarde.")
-
-async def update_bio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != DONO_ID and update.message.from_user.id not in USUARIOS_BIO:
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
@@ -784,7 +740,6 @@ async def post_init(application):
     asyncio.create_task(autolike_loop(application))
 
 app.post_init = post_init
-app.add_handler(CommandHandler("likes", send_likes))
 
 async def info_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.message.from_user.id)
