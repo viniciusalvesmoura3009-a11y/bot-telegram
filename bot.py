@@ -816,7 +816,8 @@ def load_vips():
     try:
         r = requests.get(JSONBIN_URL + "/latest", headers=JSONBIN_HEADERS)
         return r.json().get("record", {}).get("vips", {})
-    except:
+    except Exception as e:
+        print(f"[LOAD_VIPS ERRO] {type(e).__name__}: {e}", flush=True)
         return {}
 
 def save_vips(vips):
@@ -824,9 +825,10 @@ def save_vips(vips):
         r = requests.get(JSONBIN_URL + "/latest", headers=JSONBIN_HEADERS)
         data = r.json().get("record", {})
         data["vips"] = vips
-        requests.put(JSONBIN_URL, headers=JSONBIN_HEADERS, json=data)
-    except:
-        pass
+        pr = requests.put(JSONBIN_URL, headers=JSONBIN_HEADERS, json=data)
+        print(f"[SAVE_VIPS] status={pr.status_code} resp={pr.text[:200]}", flush=True)
+    except Exception as e:
+        print(f"[SAVE_VIPS ERRO] {type(e).__name__}: {e}", flush=True)
 
 async def addvip(update, context):
     if update.message.from_user.id != DONO_ID:
