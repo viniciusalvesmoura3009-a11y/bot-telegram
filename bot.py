@@ -807,6 +807,11 @@ async def list_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app.add_handler(CommandHandler("infoopen", info_open))
 
+JSONBIN_KEY = "$2a$10$2zUobgrptNlTik8VoI2BhuWqDxXp/L9WwS1tOLHdSF5Wmo7wss2XS"
+JSONBIN_ID = "6a308646da38895dfec6a1b9"
+JSONBIN_URL = f"https://api.jsonbin.io/v3/b/{JSONBIN_ID}"
+JSONBIN_HEADERS = {"X-Master-Key": JSONBIN_KEY, "Content-Type": "application/json"}
+
 def load_vips():
     try:
         r = requests.get(JSONBIN_URL + "/latest", headers=JSONBIN_HEADERS)
