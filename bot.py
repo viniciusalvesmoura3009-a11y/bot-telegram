@@ -593,7 +593,8 @@ async def ban(update, context):
         return
     user = update.message.reply_to_message.from_user
     await update.message.chat.ban_member(user.id)
-    await update.message.reply_text("✅ VIP adicionado!\n👤 Nome: " + str(context.args[3] if len(context.args) > 3 else "Desconhecido") + "\n🆔 UID: " + str(uid) + "\n✨ Enviando todos os dias. 👍")
+    nome_banido = user.first_name or user.username or "Desconhecido"
+    await update.message.reply_text("🚫 USUÁRIO BANIDO!\n👤 Nome: " + str(nome_banido) + "\n🆔 ID: " + str(user.id))
 async def anti_link(update, context):
     msg = update.message
     if msg and msg.text:
