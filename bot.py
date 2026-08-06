@@ -1535,6 +1535,7 @@ async def removepasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Usuário {alvo} removido do acesso ao /passe.")
 
 app.add_handler(CommandHandler("addpasse", addpasse))
+app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("removepasse", removepasse))
 
 FREEFIRE_API_KEY = "vl_33b37278a62449f959435a41a2370df6d324dda27c4409bd"
