@@ -1606,5 +1606,6 @@ async def like_command(update, context):
 app.add_handler(CommandHandler("like", like_command))
 app.add_handler(CommandHandler("menu", menu))
 app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu_|cmd_)"))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, anti_link))
 
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
