@@ -595,15 +595,22 @@ async def ban(update, context):
     await update.message.chat.ban_member(user.id)
     nome_banido = user.first_name or user.username or "Desconhecido"
     await update.message.reply_text("🚫 USUÁRIO BANIDO!\n👤 Nome: " + str(nome_banido) + "\n🆔 ID: " + str(user.id))
+avisos_link = {}
+
 async def anti_link(update, context):
     msg = update.message
     if msg and msg.text:
         import re
         if re.search(r"(https?://|t.me/|www.)", msg.text):
             user = msg.from_user
-            await msg.chat.ban_member(user.id)
             await msg.delete()
-            await context.bot.send_message(msg.chat.id, f"Usuario @{user.username or user.first_name} mandou um link sem autorizacao ⚠️")
+            avisos_link[user.id] = avisos_link.get(user.id, 0) + 1
+            if avisos_link[user.id] >= 2:
+                await msg.chat.ban_member(user.id)
+                await context.bot.send_message(msg.chat.id, f"🚫 Usuario @{user.username or user.first_name} foi banido por reincidencia (link).")
+                avisos_link.pop(user.id, None)
+            else:
+                await context.bot.send_message(msg.chat.id, f"⚠️ @{user.username or user.first_name}, links nao sao permitidos. Proxima vez voce sera banido.")
 
 import sys
 print("Iniciando bot...", flush=True)
