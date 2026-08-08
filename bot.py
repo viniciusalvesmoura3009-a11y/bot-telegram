@@ -315,13 +315,13 @@ async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     nick = resultado.get("nickname", uid)
     if resultado.get("sucesso"):
         msg2 = (
-            f"✅ Auto like ativado!\n👤 Nick: {nick}\n🆔 UID: {uid}\n✨ Enviando todos os dias. 👍\n\n"
+            f"✅ Auto like ativado!\n👤 Nick: {nick}\n🆔 UID: {uid}\n📅 Dias contratados: {dias}\n✨ Enviando todos os dias. 👍\n\n"
             f"🎯 PRIMEIRO ENVIO IMEDIATO\n📈 Antes: {resultado['likes_antes']} -> 🚀 Depois: {resultado['likes_depois']}"
         )
         await update.message.reply_text(msg2)
     else:
         await update.message.reply_text(
-            f"✅ Auto like ativado!\n👤 Nick: {nick}\n🆔 UID: {uid}\n✨ Enviando todos os dias. 👍\n\n"
+            f"✅ Auto like ativado!\n👤 Nick: {nick}\n🆔 UID: {uid}\n📅 Dias contratados: {dias}\n✨ Enviando todos os dias. 👍\n\n"
             f"⚠️ Primeiro envio imediato falhou: " + str(resultado.get("erro", "erro desconhecido")) +
             "\n\nO autolike continua ativo e tentará no próximo ciclo."
         )
