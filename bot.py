@@ -1807,4 +1807,9 @@ async def usohoje(update, context):
 
 app.add_handler(CommandHandler("usohoje", usohoje))
 
+app.add_handler(CommandHandler("autolike", start_autolike))
+app.add_handler(CommandHandler("stopauto", stop_autolike))
+app.add_handler(CommandHandler("addautolike", addautolike))
+app.add_handler(CommandHandler("removeautolike", removeautolike))
+
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
