@@ -1582,6 +1582,7 @@ async def like_command(update, context):
     resultado = enviar_like(uid, region)
 
     if resultado.get("sucesso"):
+        contar_uso(update.message.from_user.id)
         msg = (
             f"╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n"
             f"│  ✅️ LIKES ENVIADOS  COM SUCESSO 👍\n"
@@ -1591,7 +1592,7 @@ async def like_command(update, context):
             f"│ 🌎 Região: {resultado['regiao']}\n"
             f"│  📈 Likes antes: {resultado['likes_antes']}\n"
             f"│  🚀 Enviados agora: {resultado['likes_enviados']}\n"
-            f"(restam {resultado['restantes_hoje']})\n\n"
+            f"| ✅ Likes  Depois: {resultado['likes_depois']}\n\n"
             f"🔱 Dono: ༒REBELDE ༒VENDAS"
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
@@ -1794,5 +1795,16 @@ app.add_handler(CommandHandler("unmute", unmute_cmd))
 app.add_handler(CommandHandler("listamute", listamute_cmd))
 app.add_handler(CommandHandler("D", apagar_cmd))
 
+
+async def usohoje(update, context):
+    from datetime import datetime as _dt
+    usos = load_usos()
+    uid = str(update.message.from_user.id)
+    hoje = _dt.now().strftime("%Y-%m-%d")
+    qtd = usos.get(uid, {}).get("qtd", 0) if usos.get(uid, {}).get("data") == hoje else 0
+    restam = max(LIMITE_DIARIO - qtd, 0)
+    await update.message.reply_text(f"📊 Uso hoje: {qtd}/{LIMITE_DIARIO} (restam {restam})")
+
+app.add_handler(CommandHandler("usohoje", usohoje))
 
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
