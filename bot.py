@@ -353,18 +353,18 @@ async def autolike_loop(app):
                         pass
                     continue
             try:
-                resp = requests.get(f"{BASE_URL}/sendlikes", params={"key": FRIFAS_KEY, "id": uid})
-                data = resp.json()
-                if data.get("success") or data.get("sucesso"):
-                    d = data["data"][0]
-                    nick = d["conta"]["nome_conta"]
+                resultado = enviar_like(uid, region="BR")
+                if resultado.get("sucesso"):
                     msg = (
-"✅ AUTO LIKE ENVIADO\n\n"
-"|  👤 Jogador: " + str(nick) + "\n"
-"|  🆔 UID: " + str(uid) + "\n"
-"|  📈 Antes: " + str(d["likes"]["antes"]) + " -> 🚀 Depois: " + str(d["likes"]["depois"]) + "\n\n"
-"🔱 Dono: ༒REBELDE ༒VENDAS"
-)
+                        f"✅ AUTO LIKE ENVIADO\n\n"
+                        f"| 👤 Jogador: " + str(resultado["nickname"]) + "\n"
+                        f"| 🆔 UID: " + str(resultado["uid"]) + "\n"
+                        f"| 🌎 Região: " + str(resultado["regiao"]) + "\n"
+                        f"| 📈 Likes antes: " + str(resultado["likes_antes"]) + "\n"
+                        f"| 🚀 Enviados agora: " + str(resultado["likes_enviados"]) + "\n"
+                        f"| ✅ Likes Depois: " + str(resultado["likes_depois"]) + "\n\n"
+                        f"🔱 Dono: ✝REBELDE ✝VENDAS"
+                    )
                     await app.bot.send_message(chat_id=chat_id, text=msg)
                     if isinstance(info, dict):
                         info["dias_restantes"] = info.get("dias_restantes", 1) - 1
