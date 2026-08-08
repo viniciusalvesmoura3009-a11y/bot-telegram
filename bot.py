@@ -311,25 +311,20 @@ async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     dias = int(context.args[1]) if len(context.args) > 1 else 30
     uids_auto[uid] = {"chat_id": update.message.chat_id, "dias_restantes": dias, "criado_em": datetime.now().strftime("%Y-%m-%d")}
     save_auto(uids_auto)
-    resp = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": uid})
-    try:
-        d = resp.json()
-        nick = d["data"][0]["conta"]["nome_conta"] if resp.status_code == 200 and (d.get("success") or d.get("sucesso")) else uid
-    except:
-        nick = uid
-    await update.message.reply_text("✅ Auto like ativado!\n👤 Nick: " + str(nick) + "\n🆔 UID: " + str(uid) + "\n✨ Enviando todos os dias. 👍")
-    try:
-        resp2 = requests.get(f"{BASE_URL}/sendlikes", params={"key": FRIFAS_KEY, "id": uid})
-        data2 = resp2.json()
-        if data2.get("success") or data2.get("sucesso"):
-            d2 = data2["data"][0]
-            msg2 = "🎯 PRIMEIRO ENVIO IMEDIATO\n\n📈 Antes: " + str(d2["likes"]["antes"]) + " -> 🚀 Depois: " + str(d2["likes"]["depois"])
-            await update.message.reply_text(msg2)
-        else:
-            await update.message.reply_text("⚠️ Primeiro envio imediato falhou: " + str(data2.get("message", data2.get("mensagem", "erro desconhecido"))) + "\n\nO autolike continua ativo e tentará no próximo ciclo.")
-    except Exception as e:
-        print(f"[AUTOLIKE IMEDIATO] Erro ao enviar like para {uid}: {e}")
-        await update.message.reply_text("⚠️ Não foi possível confirmar o envio imediato, mas o autolike está ativo.")
+    resultado = enviar_like(uid, region="BR")
+    nick = resultado.get("nickname", uid)
+    if resultado.get("sucesso"):
+        msg2 = (
+            f"✅ Auto like ativado!\n👤 Nick: {nick}\n🆔 UID: {uid}\n✨ Enviando todos os dias. 👍\n\n"
+            f"🎯 PRIMEIRO ENVIO IMEDIATO\n📈 Antes: {resultado['likes_antes']} -> 🚀 Depois: {resultado['likes_depois']}"
+        )
+        await update.message.reply_text(msg2)
+    else:
+        await update.message.reply_text(
+            f"✅ Auto like ativado!\n👤 Nick: {nick}\n🆔 UID: {uid}\n✨ Enviando todos os dias. 👍\n\n"
+            f"⚠️ Primeiro envio imediato falhou: " + str(resultado.get("erro", "erro desconhecido")) +
+            "\n\nO autolike continua ativo e tentará no próximo ciclo."
+        )
 async def stop_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("Uso: /stopauto <uid>")
