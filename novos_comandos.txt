@@ -1,0 +1,175 @@
+mutados_lista = {}
+
+async def unban(update, context):
+    msg = update.message
+    member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await msg.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    if not context.args:
+        await msg.reply_text("Uso: /unban <ID do usuario>")
+        return
+    try:
+        user_id = int(context.args[0])
+        await context.bot.unban_chat_member(msg.chat_id, user_id, only_if_banned=True)
+        await msg.reply_text(f"✅ Usuario {user_id} foi desbanido.")
+    except Exception as e:
+        await msg.reply_text(f"❌ Erro: {e}")
+
+async def link_cmd(update, context):
+    msg = update.message
+    member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await msg.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    try:
+        invite_link = await context.bot.export_chat_invite_link(msg.chat_id)
+        await msg.reply_text(f"🔗 Link do grupo:\n{invite_link}")
+    except Exception as e:
+        await msg.reply_text(f"❌ Erro: {e}")
+
+async def title_cmd(update, context):
+    msg = update.message
+    member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await msg.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    if not context.args:
+        await msg.reply_text("Uso: /title <novo titulo>")
+        return
+    novo_titulo = " ".join(context.args)
+    try:
+        await context.bot.set_chat_title(msg.chat_id, novo_titulo)
+        await msg.reply_text("✅ Titulo do grupo alterado.")
+    except Exception as e:
+        await msg.reply_text(f"❌ Erro: {e}")
+
+async def desc_cmd(update, context):
+    msg = update.message
+    member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await msg.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    if not context.args:
+        await msg.reply_text("Uso: /desc <nova descricao>")
+        return
+    nova_desc = " ".join(context.args)
+    try:
+        await context.bot.set_chat_description(msg.chat_id, nova_desc)
+        await msg.reply_text("✅ Descricao do grupo alterada.")
+    except Exception as e:
+        await msg.reply_text(f"❌ Erro: {e}")
+
+async def pin_cmd(update, context):
+    msg = update.message
+    member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await msg.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    if not msg.reply_to_message:
+        await msg.reply_text("Responda a mensagem que deseja fixar com /pin")
+        return
+    try:
+        await context.bot.pin_chat_message(msg.chat_id, msg.reply_to_message.message_id)
+        await msg.reply_text("📌 Mensagem fixada.")
+    except Exception as e:
+        await msg.reply_text(f"❌ Erro: {e}")
+
+async def unpin_cmd(update, context):
+    msg = update.message
+    member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await msg.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    if not msg.reply_to_message:
+        await msg.reply_text("Responda a mensagem que deseja desafixar com /unpin")
+        return
+    try:
+        await context.bot.unpin_chat_message(msg.chat_id, msg.reply_to_message.message_id)
+        await msg.reply_text("📌 Mensagem desafixada.")
+    except Exception as e:
+        await msg.reply_text(f"❌ Erro: {e}")
+
+async def mute_cmd(update, context):
+    msg = update.message
+    member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await msg.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    if not msg.reply_to_message:
+        await msg.reply_text("Responda a mensagem do usuario que deseja silenciar com /mute")
+        return
+    alvo = msg.reply_to_message.from_user
+    try:
+        perms = ChatPermissions(can_send_messages=False)
+        await context.bot.restrict_chat_member(msg.chat_id, alvo.id, perms)
+        mutados_lista[alvo.id] = alvo.username or alvo.first_name
+        await msg.reply_text(f"🔇 Usuario {alvo.username or alvo.first_name} foi silenciado.")
+    except Exception as e:
+        await msg.reply_text(f"❌ Erro: {e}")
+
+async def unmute_cmd(update, context):
+    msg = update.message
+    member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await msg.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    if not msg.reply_to_message:
+        await msg.reply_text("Responda a mensagem do usuario que deseja dessilenciar com /unmute")
+        return
+    alvo = msg.reply_to_message.from_user
+    try:
+        perms = ChatPermissions(
+            can_send_messages=True,
+            can_send_audios=True,
+            can_send_documents=True,
+            can_send_photos=True,
+            can_send_videos=True,
+            can_send_video_notes=True,
+            can_send_voice_notes=True,
+            can_send_polls=True,
+            can_send_other_messages=True,
+            can_add_web_page_previews=True,
+        )
+        await context.bot.restrict_chat_member(msg.chat_id, alvo.id, perms)
+        mutados_lista.pop(alvo.id, None)
+        await msg.reply_text(f"🔊 Usuario {alvo.username or alvo.first_name} foi dessilenciado.")
+    except Exception as e:
+        await msg.reply_text(f"❌ Erro: {e}")
+
+async def listamute_cmd(update, context):
+    msg = update.message
+    if not mutados_lista:
+        await msg.reply_text("Nenhum usuario silenciado no momento.")
+        return
+    texto = "🔇 Usuarios silenciados:\n\n"
+    for uid, nome in mutados_lista.items():
+        texto += f"• {nome} (ID: {uid})\n"
+    await msg.reply_text(texto)
+
+async def apagar_cmd(update, context):
+    msg = update.message
+    member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
+    if member.status not in ['administrator', 'creator']:
+        await msg.reply_text("❌ Apenas administradores podem usar este comando.")
+        return
+    if not msg.reply_to_message:
+        await msg.reply_text("Responda a mensagem que deseja apagar com /D")
+        return
+    try:
+        await msg.reply_to_message.delete()
+        await msg.delete()
+    except Exception as e:
+        pass
+
+app.add_handler(CommandHandler("unban", unban))
+app.add_handler(CommandHandler("link", link_cmd))
+app.add_handler(CommandHandler("title", title_cmd))
+app.add_handler(CommandHandler("desc", desc_cmd))
+app.add_handler(CommandHandler("pin", pin_cmd))
+app.add_handler(CommandHandler("unpin", unpin_cmd))
+app.add_handler(CommandHandler("mute", mute_cmd))
+app.add_handler(CommandHandler("unmute", unmute_cmd))
+app.add_handler(CommandHandler("listamute", listamute_cmd))
+app.add_handler(CommandHandler("D", apagar_cmd))
+
