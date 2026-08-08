@@ -1591,8 +1591,6 @@ async def like_command(update, context):
             f"│ 🌎 Região: {resultado['regiao']}\n"
             f"│  📈 Likes antes: {resultado['likes_antes']}\n"
             f"│  🚀 Enviados agora: {resultado['likes_enviados']}\n"
-            f"│  ✅ Likes  Depois: {resultado['likes_depois']}\n\n"
-            f"📊 Uso hoje: {resultado['uso_hoje']}/{resultado['limite_diario']} "
             f"(restam {resultado['restantes_hoje']})\n\n"
             f"🔱 Dono: ༒REBELDE ༒VENDAS"
         )
