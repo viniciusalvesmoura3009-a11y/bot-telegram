@@ -372,7 +372,13 @@ async def autolike_loop(app):
                         save_auto(uids_auto)
             except Exception as e:
                 print(f"[AUTOLIKE LOOP] Erro ao processar UID {uid}: {e}")
-        await asyncio.sleep(86400)
+        agora_utc = datetime.utcnow()
+        agora_br = agora_utc - timedelta(hours=3)
+        proximo = agora_br.replace(hour=13, minute=1, second=0, microsecond=0)
+        if agora_br >= proximo:
+            proximo = proximo + timedelta(days=1)
+        segundos_ate_proximo = (proximo - agora_br).total_seconds()
+        await asyncio.sleep(segundos_ate_proximo)
 
 async def addlikes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id != DONO_ID:
