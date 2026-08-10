@@ -708,6 +708,8 @@ async def checar_grupo_autorizado(update: Update, context: ContextTypes.DEFAULT_
     chat = update.effective_chat
     if chat is None or chat.type == "private":
         return True
+    if update.message and update.message.from_user and update.message.from_user.id == DONO_ID:
+        return True
     chat_id = chat.id
     grupos_atuais = load_grupos_autorizados()
     if chat_id == GRUPO_PRINCIPAL:
