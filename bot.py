@@ -357,7 +357,7 @@ async def autolike_loop(app):
                         f"| 🌎 Região: " + str(resultado["regiao"]) + "\n"
                         f"| 📈 Likes antes: " + str(resultado["likes_antes"]) + "\n"
                         f"| 🚀 Enviados agora: " + str(resultado["likes_enviados"]) + "\n"
-                        f"| ✅ Likes Depois: " + str(resultado["likes_depois"]) + "\n\n"
+                        f"│ ✅ Likes Depois: " + str(resultado["likes_depois"]) + "\n\n"
                         f"🔱 Dono: ✝REBELDE ✝VENDAS"
                     )
                     await app.bot.send_message(chat_id=chat_id, text=msg)
@@ -1587,7 +1587,7 @@ async def like_command(update, context):
             f"│ 🌎 Região: {resultado['regiao']}\n"
             f"│  📈 Likes antes: {resultado['likes_antes']}\n"
             f"│  🚀 Enviados agora: {resultado['likes_enviados']}\n"
-            f"| ✅ Likes  Depois: {resultado['likes_depois']}\n\n"
+            f"│ ✅ Likes  Depois: {resultado['likes_depois']}\n\n"
             f"🔱 Dono: ༒REBELDE ༒VENDAS"
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
