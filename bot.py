@@ -363,6 +363,11 @@ async def autolike_loop(app):
                     await app.bot.send_message(chat_id=chat_id, text=msg)
                     if isinstance(info, dict):
                         info["dias_restantes"] = info.get("dias_restantes", 1) - 1
+                        agora_hist = datetime.utcnow() - timedelta(hours=3)
+                        data_hist = agora_hist.strftime("%d/%m/%Y")
+                        historico = info.get("historico", {})
+                        historico[data_hist] = historico.get(data_hist, 0) + resultado["likes_enviados"]
+                        info["historico"] = historico
                         uids_auto[uid] = info
                         save_auto(uids_auto)
             except Exception as e:
@@ -1042,6 +1047,34 @@ async def listautolike(update, context):
     await update.message.reply_text(msg)
 
 app.add_handler(CommandHandler("listautolike", listautolike))
+
+async def resumoautolike(update, context):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("⚠️ Apenas o dono pode usar esse comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /resumoautolike <uid>")
+        return
+    uid = context.args[0]
+    uids_auto = load_auto()
+    info = uids_auto.get(uid)
+    if not info or not isinstance(info, dict):
+        await update.message.reply_text("❌ UID não encontrado ou sem histórico.")
+        return
+    historico = info.get("historico", {})
+    if not historico:
+        await update.message.reply_text("Nenhum registro de likes ainda para esse UID.")
+        return
+    dias_semana = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
+    msg = f"📊 RESUMO AUTO-LIKE\n🆔 UID: {uid}\n\n"
+    for data_str in sorted(historico.keys(), key=lambda d: datetime.strptime(d, "%d/%m/%Y")):
+        data_obj = datetime.strptime(data_str, "%d/%m/%Y")
+        dia_semana = dias_semana[data_obj.weekday()]
+        qtd = historico[data_str]
+        msg += f"📅 {data_str} ({dia_semana}): {qtd} likes\n"
+    await update.message.reply_text(msg)
+
+app.add_handler(CommandHandler("resumoautolike", resumoautolike))
 
 async def ytmp3(update, context):
     uid = str(update.message.from_user.id)
