@@ -671,7 +671,7 @@ def load_grupos_autorizados():
     u = load_usos()
     dados = u.get("grupos_autorizados", [])
     if isinstance(dados, list):
-        return {gid: {"expira_em": None, "limite_diario": None, "usados_hoje": {"data": "", "qtd": 0}} for gid in dados}
+        return {str(gid): {"expira_em": None, "limite_diario": None, "usados_hoje": {"data": "", "qtd": 0}} for gid in dados}
     return dados
 
 def save_grupos_autorizados(grupos):
@@ -681,7 +681,7 @@ def save_grupos_autorizados(grupos):
 
 def checar_limite_grupo_diario(chat_id):
     grupos_atuais = load_grupos_autorizados()
-    info = grupos_atuais.get(chat_id)
+    info = grupos_atuais.get(str(chat_id))
     if not info or not isinstance(info, dict):
         return True
     limite = info.get("limite_diario")
@@ -693,12 +693,12 @@ def checar_limite_grupo_diario(chat_id):
         usados = {"data": hoje, "qtd": 0}
     if usados["qtd"] >= limite:
         info["usados_hoje"] = usados
-        grupos_atuais[chat_id] = info
+        grupos_atuais[str(chat_id)] = info
         save_grupos_autorizados(grupos_atuais)
         return False
     usados["qtd"] += 1
     info["usados_hoje"] = usados
-    grupos_atuais[chat_id] = info
+    grupos_atuais[str(chat_id)] = info
     save_grupos_autorizados(grupos_atuais)
     return True
 
@@ -712,15 +712,15 @@ async def checar_grupo_autorizado(update: Update, context: ContextTypes.DEFAULT_
     grupos_atuais = load_grupos_autorizados()
     if chat_id == GRUPO_PRINCIPAL:
         return True
-    if chat_id in grupos_atuais:
-        info = grupos_atuais[chat_id]
+    if str(chat_id) in grupos_atuais:
+        info = grupos_atuais[str(chat_id)]
         expira_em = info.get("expira_em") if isinstance(info, dict) else None
         if expira_em:
             try:
                 data_exp = datetime.strptime(expira_em, "%d/%m/%Y")
                 agora = datetime.utcnow() - timedelta(hours=3)
                 if agora > data_exp:
-                    grupos_atuais.pop(chat_id, None)
+                    grupos_atuais.pop(str(chat_id), None)
                     save_grupos_autorizados(grupos_atuais)
                     try:
                         await context.bot.send_message(chat_id, "⏰ A autorização deste grupo expirou.")
@@ -760,7 +760,7 @@ async def addgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     expira_em = (datetime.utcnow() - timedelta(hours=3) + timedelta(days=dias)).strftime("%d/%m/%Y")
     grupos_atuais = load_grupos_autorizados()
-    grupos_atuais[gid] = {"expira_em": expira_em, "limite_diario": limite, "usados_hoje": {"data": "", "qtd": 0}}
+    grupos_atuais[str(gid)] = {"expira_em": expira_em, "limite_diario": limite, "usados_hoje": {"data": "", "qtd": 0}}
     save_grupos_autorizados(grupos_atuais)
     await update.message.reply_text(f"✅ Grupo {gid} autorizado!\n📅 Validade: {dias} dias (expira em {expira_em})\n🔢 Limite: {limite} IDs por dia")
 
@@ -777,7 +777,7 @@ async def removergrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("ID inválido.")
         return
     grupos_atuais = load_grupos_autorizados()
-    grupos_atuais.pop(gid, None)
+    grupos_atuais.pop(str(gid), None)
     save_grupos_autorizados(grupos_atuais)
     try:
         await context.bot.send_message(gid, "❌ Este bot foi desautorizado deste grupo.")
@@ -792,7 +792,7 @@ async def checkgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     grupos_atuais = load_grupos_autorizados()
     linhas = [f"🏠 Principal: {GRUPO_PRINCIPAL}"]
-    for gid in grupos_atuais:
+    for gid in list(grupos_atuais.keys()):
         try:
             chat = await context.bot.get_chat(gid)
             nome = chat.title or "Sem nome"
