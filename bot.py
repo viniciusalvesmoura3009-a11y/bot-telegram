@@ -968,7 +968,7 @@ async def tabela(update, context):
         "• 4\.000 LIKES 💰 R$25,00 \`20 DIA\`\n"
         "• 5\.000 LIKES 💰 R$30,00 \`25 DIA\`\n"
         "• 10\.000 LIKES 💰 R$55,00 \`50 DIA\`\n\n"
-        "● Caindo de *200 a 220* likes por dia\!\n\n"
+        "● Caindo de *200* likes por dia\!\n\n"
         "*Semanal R$12,00* — 1\.400 👍\n"
         "*Mensal R$35,00* — 6\.000 👍\n\n"
         "[🛒 CLIQUE AQUI PRA COMPRAR](https://wa.me/5582988631900?text=OL%C3%81%20REBELDE,%20QUERO%20ESCOLHER%20O%20PLANO%20DE%20LIKES%20POR%20FREE%20FIRE%20POR%20FAVOR%20%F0%9F%98%8D%E2%9C%A8%EF%B8%8F)"
