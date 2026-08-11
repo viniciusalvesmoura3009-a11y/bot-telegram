@@ -1108,7 +1108,7 @@ async def token(update, context):
     texto = (
         "🎁 *ACESSE AO LINK AQUI EM BAIXO*\n\n"
         "👇\n\n"
-        "https://tinyurl.com/Supremegiftstore"
+        "https://discstore.recargajogo.com.br/"
     )
     await update.message.reply_text(texto, parse_mode="Markdown", disable_web_page_preview=True)
 
