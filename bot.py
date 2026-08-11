@@ -179,14 +179,14 @@ async def meususos(update, context):
     await update.message.reply_text(f"📊 Seus usos hoje: {qtd}/{LIMITE_DIARIO}")
 
 async def usosgeral(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ Apenas o dono pode usar este comando.")
         return
     total = total_geral_hoje()
     total = total_likes_hoje()
     await update.message.reply_text(f"📊 Likes usados hoje: {total}")
 
-    if update.message.from_user.id != DONO_ID and update.message.from_user.id not in USUARIOS_BIO:
+    if not eh_dono(update.message.from_user.id) and update.message.from_user.id not in USUARIOS_BIO:
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args or len(context.args) < 2:
@@ -301,7 +301,7 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("UID invalido!")
 
 async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID and update.message.from_user.id not in USUARIOS_AUTO:
+    if not eh_dono(update.message.from_user.id) and update.message.from_user.id not in USUARIOS_AUTO:
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args:
@@ -381,7 +381,7 @@ async def autolike_loop(app):
         await asyncio.sleep(segundos_ate_proximo)
 
 async def addlikes(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args:
@@ -391,7 +391,7 @@ async def addlikes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Usuario " + context.args[0] + " pode usar /like agora!")
 
 async def removelikes(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args:
@@ -401,7 +401,7 @@ async def removelikes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Usuario " + context.args[0] + " removido!")
 
 async def addautolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args:
@@ -418,7 +418,7 @@ async def addautolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg)
 
 async def removeautolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args:
@@ -428,7 +428,7 @@ async def removeautolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🗑️ AUTOLIKE REMOVIDO\n\n🆔 UID: " + str(context.args[0]) + "\n🚫 Auto like desativado.")
 
 async def addbio(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args:
@@ -439,7 +439,7 @@ async def addbio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Usuario " + context.args[0] + " pode usar /bio agora!")
 
 async def removebio(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args:
@@ -591,7 +591,7 @@ async def boas_vindas(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ban(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not update.message.reply_to_message:
@@ -702,6 +702,24 @@ def checar_limite_grupo_diario(chat_id):
     save_grupos_autorizados(grupos_atuais)
     return True
 
+def load_liberados():
+    u = load_usos()
+    return set(u.get("acessos_liberados", []))
+
+def save_liberados(liberados):
+    u = load_usos()
+    u["acessos_liberados"] = list(liberados)
+    save_usos(u)
+
+def eh_dono(user_id):
+    try:
+        uid = int(user_id)
+    except Exception:
+        return False
+    if uid == DONO_ID:
+        return True
+    return uid in load_liberados()
+
 GRUPOS_AUTORIZADOS = set()
 
 async def checar_grupo_autorizado(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -741,7 +759,7 @@ async def checar_grupo_autorizado(update: Update, context: ContextTypes.DEFAULT_
     return False
 
 async def addgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
         return
     args = context.args
@@ -767,7 +785,7 @@ async def addgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Grupo {gid} autorizado!\n📅 Validade: {dias} dias (expira em {expira_em})\n🔢 Limite: {limite} IDs por dia")
 
 async def removergrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
         return
     if not context.args:
@@ -789,7 +807,7 @@ async def removergrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Grupo {gid} removido e bot saiu de lá.")
 
 async def checkgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
         return
     grupos_atuais = load_grupos_autorizados()
@@ -804,6 +822,54 @@ async def checkgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "📋 Grupos usando o bot:\n\n" + "\n".join(linhas)
     await update.message.reply_text(msg)
 
+async def liberacesso(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /liberacesso <id_do_usuario>")
+        return
+    try:
+        uid = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("ID inválido.")
+        return
+    liberados = load_liberados()
+    liberados.add(uid)
+    save_liberados(liberados)
+    await update.message.reply_text(f"✅ Acesso total liberado para o ID {uid}.")
+
+async def removeracesso(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removeracesso <id_do_usuario>")
+        return
+    try:
+        uid = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("ID inválido.")
+        return
+    liberados = load_liberados()
+    liberados.discard(uid)
+    save_liberados(liberados)
+    await update.message.reply_text(f"🗑️ Acesso removido do ID {uid}.")
+
+async def listliberados(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.from_user.id != DONO_ID:
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    liberados = load_liberados()
+    if not liberados:
+        await update.message.reply_text("Nenhum acesso liberado no momento.")
+        return
+    msg = "🔓 IDs com acesso total liberado:\n\n" + "\n".join(str(uid) for uid in liberados)
+    await update.message.reply_text(msg)
+
+app.add_handler(CommandHandler("liberacesso", liberacesso))
+app.add_handler(CommandHandler("removeracesso", removeracesso))
+app.add_handler(CommandHandler("listliberados", listliberados))
 app.add_handler(CommandHandler("addgrupo", addgrupo))
 app.add_handler(CommandHandler("removergrupo", removergrupo))
 app.add_handler(CommandHandler("checkgrupo", checkgrupo))
@@ -901,7 +967,7 @@ def save_vips(vips):
         print(f"[SAVE_VIPS ERRO] {type(e).__name__}: {e}", flush=True)
 
 async def addvip(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if len(context.args) < 3:
@@ -922,7 +988,7 @@ async def addvip(update, context):
     save_vips(vips)
     await update.message.reply_text("👑 VIP ATIVO\n\n👤 " + str(context.args[3] if len(context.args) > 3 else "Desconhecido") + "\n🆔 " + str(uid) + "\n📅 Inicio: " + datetime.now().strftime("%d/%m/%Y") + "  Expira: " + (datetime.now() + timedelta(days=dias)).strftime("%d/%m/%Y") + "\n🔄 Usos/dia: " + str(usos))
 async def removevip(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     if not context.args:
@@ -938,7 +1004,7 @@ async def removevip(update, context):
         await update.message.reply_text("Usuário não encontrado no VIP!")
 
 async def listvip(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
     vips = load_vips()
@@ -1087,7 +1153,7 @@ async def ia(update, context):
 app.add_handler(CommandHandler("ia", ia))
 
 async def listautolike(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ Apenas o dono pode usar esse comando.")
         return
     uids_auto = load_auto()
@@ -1105,7 +1171,7 @@ async def listautolike(update, context):
 app.add_handler(CommandHandler("listautolike", listautolike))
 
 async def resumoautolike(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ Apenas o dono pode usar esse comando.")
         return
     if not context.args:
@@ -1199,7 +1265,7 @@ app.add_handler(CommandHandler("ytmp3", ytmp3))
 app.add_handler(CommandHandler("ytmp4", ytmp4))
 
 async def promove(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ Apenas o dono pode usar esse comando.")
         return
     target_id = None
@@ -1230,7 +1296,7 @@ async def promove(update, context):
         await update.message.reply_text(f"❌ Erro ao promover: {str(e)}\n\nVerifique se o bot é admin com permissão de promover membros.")
 
 async def rebaixa(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ Apenas o dono pode usar esse comando.")
         return
     target_id = None
@@ -1648,7 +1714,7 @@ def enviar_like(uid, region="BR"):
 
 
 async def like_command(update, context):
-    if update.message.from_user.id != DONO_ID:
+    if not eh_dono(update.message.from_user.id):
         valido, restantes, motivo = checar_vip(str(update.message.from_user.id))
         if not valido:
             if motivo == "limite":
