@@ -1787,6 +1787,9 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, anti_link))
 mutados_lista = {}
 
 async def unban(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
     msg = update.message
     member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
     if member.status not in ['administrator', 'creator']:
@@ -1815,6 +1818,9 @@ async def link_cmd(update, context):
         await msg.reply_text(f"❌ Erro: {e}")
 
 async def title_cmd(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
     msg = update.message
     member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
     if member.status not in ['administrator', 'creator']:
@@ -1831,6 +1837,9 @@ async def title_cmd(update, context):
         await msg.reply_text(f"❌ Erro: {e}")
 
 async def desc_cmd(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
     msg = update.message
     member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
     if member.status not in ['administrator', 'creator']:
@@ -1847,6 +1856,9 @@ async def desc_cmd(update, context):
         await msg.reply_text(f"❌ Erro: {e}")
 
 async def pin_cmd(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
     msg = update.message
     member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
     if member.status not in ['administrator', 'creator']:
@@ -1862,6 +1874,9 @@ async def pin_cmd(update, context):
         await msg.reply_text(f"❌ Erro: {e}")
 
 async def unpin_cmd(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
     msg = update.message
     member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
     if member.status not in ['administrator', 'creator']:
@@ -1877,6 +1892,9 @@ async def unpin_cmd(update, context):
         await msg.reply_text(f"❌ Erro: {e}")
 
 async def mute_cmd(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
     msg = update.message
     member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
     if member.status not in ['administrator', 'creator']:
@@ -1895,6 +1913,9 @@ async def mute_cmd(update, context):
         await msg.reply_text(f"❌ Erro: {e}")
 
 async def unmute_cmd(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
     msg = update.message
     member = await context.bot.get_chat_member(msg.chat_id, msg.from_user.id)
     if member.status not in ['administrator', 'creator']:
@@ -1924,6 +1945,9 @@ async def unmute_cmd(update, context):
         await msg.reply_text(f"❌ Erro: {e}")
 
 async def listamute_cmd(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
     msg = update.message
     if not mutados_lista:
         await msg.reply_text("Nenhum usuario silenciado no momento.")
@@ -1961,6 +1985,9 @@ app.add_handler(CommandHandler("D", apagar_cmd))
 
 
 async def usohoje(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
     from datetime import datetime as _dt
     usos = load_usos()
     uid = str(update.message.from_user.id)
