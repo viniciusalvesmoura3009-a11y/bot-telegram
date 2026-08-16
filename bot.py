@@ -1475,22 +1475,21 @@ async def agendar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("Uso: /agendar <uid>")
         return
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     player_id = context.args[0]
     await update.message.reply_text("🔍 Buscando informações do jogador, aguarde...")
     try:
-        resp_info = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": player_id}, timeout=40)
+        resp_info = requests.get(f"https://passe.soyxapasse.com.br/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=40)
         data_info = resp_info.json()
     except Exception:
         await update.message.reply_text("❌ Não foi possível verificar o jogador. Tente novamente.")
         return
-    if not (data_info.get("success") or data_info.get("sucesso")):
+    if not data_info.get("success"):
         await update.message.reply_text("❌ Jogador não encontrado. Verifique o UID.")
         return
-    d = data_info["data"][0]["conta"]
-    nick = d.get("nome_conta", "?")
-    nivel = d.get("level", "?")
-    regiao = d.get("region", "?")
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    nick = data_info.get("nickname", "?")
+    nivel = data_info.get("level", "?")
+    regiao = data_info.get("regiao", "?")
     keyboard = [[
         InlineKeyboardButton("✅ Confirmar", callback_data=f"agendar_confirm_{player_id}"),
         InlineKeyboardButton("❌ Cancelar", callback_data="agendar_cancel")
@@ -1516,14 +1515,15 @@ async def agendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         player_id = query.data.replace("agendar_confirm_", "")
         await query.edit_message_text("📦 Agendando, aguarde...")
         try:
+            try:
+                resp_nome = requests.get(f"https://passe.soyxapasse.com.br/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=30)
+                nome_agendamento = resp_nome.json().get("nickname", player_id)
+            except Exception:
+                nome_agendamento = player_id
             resp = requests.post(
-                "https://storcktec.com.br/api/v1/agendar",
-                headers={
-                    "X-API-Token": STORCKTEC_TOKEN,
-                    "X-API-Senha": STORCKTEC_SENHA,
-                    "Content-Type": "application/json"
-                },
-                json={"player_id": player_id, "mensagem": "BOM APROVEITO, REBELDE VENDAS AGRADECE PELA COMPRA"},
+                "https://passe.soyxapasse.com.br/api/agendamentos/agendar",
+                headers={"Content-Type": "application/json"},
+                json={"token": PASSE_API_TOKEN, "player_id": player_id, "nome": nome_agendamento},
                 timeout=30
             )
             if resp.status_code != 200 or not resp.text.strip():
