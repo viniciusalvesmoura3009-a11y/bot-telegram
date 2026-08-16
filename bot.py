@@ -24,6 +24,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Messa
 FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
+PASSE_API_TOKEN = os.getenv("PASSE_API_TOKEN")
 BASE_URL = "https://fluxdevservice.com/api/frifas"
 DONO_ID = 7895922394
 
@@ -1343,19 +1344,18 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     player_id = context.args[0]
     await update.message.reply_text("🔎 Buscando informações do jogador, aguarde...")
     try:
-        resp_info = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": player_id}, timeout=40)
+        resp_info = requests.get(f"https://passe.soyxapasse.com.br/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=40)
         data_info = resp_info.json()
     except Exception:
         await update.message.reply_text("❌ Não foi possível verificar o jogador. Tente novamente.")
         return
-    if not (data_info.get("success") or data_info.get("sucesso")):
+    if not data_info.get("success"):
         await update.message.reply_text("❌ Jogador não encontrado. Verifique o UID.")
         return
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    d = data_info["data"][0]["conta"]
-    nick = d.get("nome_conta", "?")
-    nivel = d.get("level", "?")
-    regiao = d.get("region", "?")
+    nick = data_info.get("nickname", "?")
+    nivel = data_info.get("level", "?")
+    regiao = data_info.get("regiao", "?")
     keyboard = [[
         InlineKeyboardButton("✅ Confirmar", callback_data=f"passe_confirm_{player_id}"),
         InlineKeyboardButton("❌ Cancelar", callback_data="passe_cancel")
@@ -1382,13 +1382,12 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("📦 Enviando passe, aguarde...")
         try:
             resp = requests.post(
-                "https://storcktec.com.br/api/v1/order",
+                "https://passe.soyxapasse.com.br/api/v1/order",
                 headers={
-                    "X-API-Token": STORCKTEC_TOKEN,
-                    "X-API-Senha": STORCKTEC_SENHA,
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-Bot-Name": "RebeldeFF"
                 },
-                json={"player_id": player_id},
+                json={"token": PASSE_API_TOKEN, "player_id": player_id},
                 timeout=30
             )
             if resp.status_code != 200 or not resp.text.strip():
@@ -1435,8 +1434,8 @@ async def consultarpasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔎 Consultando, aguarde...")
     try:
         resp = requests.get(
-            f"https://storcktec.com.br/api/v1/consultar/{player_id}",
-            headers={"X-API-Token": STORCKTEC_TOKEN, "X-API-Senha": STORCKTEC_SENHA},
+            f"https://passe.soyxapasse.com.br/api/v1/consultar/{player_id}",
+            params={"token": PASSE_API_TOKEN},
             timeout=30
         )
         data = resp.json()
@@ -1449,7 +1448,7 @@ async def consultarpasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"👤 Nick: {data.get('nickname', '?')}\n"
             f"🆔 ID: {player_id}\n"
             f"⭐ Level: {data.get('level', '?')}\n"
-            f"❤️ Likes: {data.get('likes', '?')}\n"
+            f"❤️ Likes: {data.get('curtidas', '?')}\n"
             f"🌍 Região: {data.get('regiao', '?')}"
         )
         await update.message.reply_text(msg)
