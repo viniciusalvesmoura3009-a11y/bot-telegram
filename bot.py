@@ -1943,6 +1943,14 @@ def preco_traje(modelo):
     return 20
 
 
+def nome_traje(modelo):
+    if modelo == "preto":
+        return "Ninja-preto"
+    if modelo == "branco":
+        return "Ninja-branco"
+    return modelo
+
+
 # ===================== /saldo =====================
 async def saldo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -2070,12 +2078,12 @@ async def traje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("❌ Cancelar", callback_data="traje_cancel")
         ]]
         await update.message.reply_text(
-            f"👕 Confirma o envio do traje *{modelo}* (R${preco_traje(modelo)},00) para `{player_id}`?",
+            f"👕 Confirma o envio do traje *{nome_traje(modelo)}* (R${preco_traje(modelo)},00) para `{player_id}`?",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="Markdown"
         )
     else:
-        keyboard = [[InlineKeyboardButton(f"{m} - R${preco_traje(m)},00", callback_data=f"trajemenu_{m}_{player_id}")] for m in TRAJES_VALIDOS]
+        keyboard = [[InlineKeyboardButton(f"{nome_traje(m)} - R${preco_traje(m)},00", callback_data=f"trajemenu_{m}_{player_id}")] for m in TRAJES_VALIDOS]
         await update.message.reply_text("👕 Escolha o modelo:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
@@ -2093,7 +2101,7 @@ async def traje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("❌ Cancelar", callback_data="traje_cancel")
         ]]
         await query.edit_message_text(
-            f"👕 Confirma o envio do traje *{modelo}* (R${preco_traje(modelo)},00) para `{player_id}`?",
+            f"👕 Confirma o envio do traje *{nome_traje(modelo)}* (R${preco_traje(modelo)},00) para `{player_id}`?",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="Markdown"
         )
@@ -2115,7 +2123,7 @@ async def traje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"✅ Traje enviado!\n"
                     f"━━━━━━━━━━━━\n"
                     f"👤 UID: {player_id}\n"
-                    f"👕 Modelo: {data.get('modelo_nome', modelo)}\n"
+                    f"👕 Modelo: {data.get('modelo_nome') or nome_traje(modelo)}\n"
                     f"💵 Valor: R${preco_traje(modelo)},00\n"
                     f"💰 Saldo atual: R${data.get('saldo_atual', '?')}"
                 )
