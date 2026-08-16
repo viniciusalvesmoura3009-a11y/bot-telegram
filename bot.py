@@ -1963,6 +1963,10 @@ def nome_traje(modelo):
 
 # ===================== /saldo =====================
 async def saldo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
     try:
         resp = requests.get(f"{PASSE_BASE_URL}/api/v1/check-balance",
                              params={"token": PASSE_API_TOKEN}, timeout=15)
@@ -1993,6 +1997,10 @@ async def saldo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ===================== /estoque =====================
 async def estoque(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
     try:
         resp = requests.get(f"{PASSE_BASE_URL}/api/v1/stock", timeout=15)
         data = resp.json()
@@ -2013,6 +2021,10 @@ async def estoque(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ===================== /personagem <uid> =====================
 async def personagem(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
     if not context.args:
         await update.message.reply_text("Uso: /personagem <uid>")
         return
@@ -2071,6 +2083,10 @@ async def personagem_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 # ===================== /traje <uid> <modelo> =====================
 async def traje(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
     if len(context.args) < 1:
         await update.message.reply_text(
             "Uso: /traje <uid> [modelo]\n\n"
@@ -2146,6 +2162,10 @@ async def traje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ===================== /emote <uid> =====================
 async def emote(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
     if not context.args:
         await update.message.reply_text("Uso: /emote <uid>")
         return
@@ -2216,6 +2236,10 @@ async def emote_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ===================== /codiguin [produto] =====================
 async def codiguin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
     produto = context.args[0] if context.args else "snickers"
     try:
         resp = requests.get(f"{PASSE_BASE_URL}/api/v1/codiguins", timeout=15)
