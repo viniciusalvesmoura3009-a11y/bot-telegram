@@ -1966,4 +1966,341 @@ app.add_handler(CommandHandler("stopauto", stop_autolike))
 app.add_handler(CommandHandler("addautolike", addautolike))
 app.add_handler(CommandHandler("removeautolike", removeautolike))
 
+import uuid
+PASSE_BASE_URL = "https://passe.soyxapasse.com.br"
+TRAJES_VALIDOS = ["branco", "preto", "diabinha", "anjinha", "astronauta", "spacefarer", "velho_rabujento"]
+
+
+# ===================== /saldo =====================
+async def saldo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        resp = requests.get(f"{PASSE_BASE_URL}/api/v1/check-balance",
+                             params={"token": PASSE_API_TOKEN}, timeout=15)
+        texto = resp.text.strip()
+        if texto.startswith("ERRO="):
+            await update.message.reply_text(f"❌ {texto.replace('ERRO=', '')}")
+            return
+        dados = {}
+        for par in texto.split():
+            if "=" in par:
+                chave, valor = par.split("=", 1)
+                dados[chave] = valor
+        evento = "🔥 ATIVO (preços promocionais)" if dados.get("evento") == "1" else "Não"
+        msg = (
+            f"💰 *SALDO*\n"
+            f"━━━━━━━━━━━━\n"
+            f"💵 Saldo: R${dados.get('saldo', '?')}\n"
+            f"🎫 Passes: {dados.get('passes', '?')} (R${dados.get('preco_passe', '?')} cada)\n"
+            f"🧑 Personagens: {dados.get('personagens', '?')} (R${dados.get('preco_personagem', '?')} cada)\n"
+            f"🥷 Ninja: {dados.get('ninja', '?')} (R${dados.get('preco_ninja', '?')} cada)\n"
+            f"🎟️ Codiguins: {dados.get('codiguins', '?')} (R${dados.get('preco_codiguin', '?')} cada)\n"
+            f"🎉 Evento de recarga: {evento}"
+        )
+        await update.message.reply_text(msg, parse_mode="Markdown")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+
+
+# ===================== /estoque =====================
+async def estoque(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        resp = requests.get(f"{PASSE_BASE_URL}/api/v1/stock", timeout=15)
+        data = resp.json()
+        pers = data.get("personagens", {})
+        msg = (
+            f"📦 *ESTOQUE*\n"
+            f"━━━━━━━━━━━━\n"
+            f"🎫 Passes: {data.get('total_passes', '?')}\n"
+            f"💎 Diamantes (api1): {data.get('api1', '?')}\n"
+            f"🧑 Personagens disponíveis: {pers.get('disponivel', '?')}\n"
+            f"   Envios disponíveis: {pers.get('envios_disponiveis', '?')}\n"
+            f"   Contas ouro: {pers.get('contas_ouro', '?')}"
+        )
+        await update.message.reply_text(msg, parse_mode="Markdown")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+
+
+# ===================== /personagem <uid> =====================
+async def personagem(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Uso: /personagem <uid>")
+        return
+    player_id = context.args[0]
+    keyboard = [[
+        InlineKeyboardButton("✅ Confirmar", callback_data=f"personagem_confirm_{player_id}"),
+        InlineKeyboardButton("❌ Cancelar", callback_data="personagem_cancel")
+    ]]
+    await update.message.reply_text(
+        f"🧑 Confirma o envio de *50 personagens* para o UID `{player_id}`?\n"
+        f"⚠️ Nível mínimo do jogador: 10. Entrega pode demorar (até 6 min).",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="Markdown"
+    )
+
+
+async def personagem_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "personagem_cancel":
+        await query.edit_message_text("❌ Cancelado.")
+        return
+    if query.data.startswith("personagem_confirm_"):
+        player_id = query.data.replace("personagem_confirm_", "")
+        await query.edit_message_text("📦 Enviando personagens, aguarde (pode levar minutos)...")
+        try:
+            resp = requests.post(
+                f"{PASSE_BASE_URL}/api/v1/order-personagem",
+                headers={"Content-Type": "application/json"},
+                json={"token": PASSE_API_TOKEN, "player_id": player_id},
+                timeout=360
+            )
+            data = resp.json()
+            if resp.status_code == 207 and data.get("incerto"):
+                await query.edit_message_text("⚠️ Resultado incerto — NÃO reenvie. Verifique manualmente antes de tentar de novo.")
+                return
+            if data.get("success"):
+                msg = (
+                    f"✅ Personagens enviados!\n"
+                    f"━━━━━━━━━━━━\n"
+                    f"👤 UID: {player_id}\n"
+                    f"🧑 Enviados: {data.get('personagens_enviados', '?')}\n"
+                    f"📊 Total: {data.get('total_personagens', '?')}\n"
+                    f"💵 Debitado: R${data.get('valor_debitado', '?')}\n"
+                    f"💰 Saldo atual: R${data.get('saldo_atual', '?')}"
+                )
+            else:
+                nivel = data.get("nivel")
+                nivel_min = data.get("nivel_minimo")
+                extra = f" (nível {nivel}, mínimo {nivel_min})" if nivel is not None else ""
+                msg = f"❌ {data.get('message', 'Erro ao enviar personagens.')}{extra}"
+            await query.edit_message_text(msg)
+        except Exception as e:
+            await query.edit_message_text(f"❌ Erro: {str(e)}")
+
+
+# ===================== /traje <uid> <modelo> =====================
+async def traje(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if len(context.args) < 1:
+        await update.message.reply_text(
+            "Uso: /traje <uid> [modelo]\n\n"
+            "Modelos: " + ", ".join(TRAJES_VALIDOS)
+        )
+        return
+    player_id = context.args[0]
+    if len(context.args) >= 2:
+        modelo = context.args[1].lower()
+        if modelo not in TRAJES_VALIDOS:
+            await update.message.reply_text(f"❌ Modelo inválido. Opções: {', '.join(TRAJES_VALIDOS)}")
+            return
+        keyboard = [[
+            InlineKeyboardButton("✅ Confirmar", callback_data=f"traje_confirm_{modelo}_{player_id}"),
+            InlineKeyboardButton("❌ Cancelar", callback_data="traje_cancel")
+        ]]
+        await update.message.reply_text(
+            f"👕 Confirma o envio do traje *{modelo}* (R$12,00) para `{player_id}`?",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="Markdown"
+        )
+    else:
+        keyboard = [[InlineKeyboardButton(m, callback_data=f"trajemenu_{m}_{player_id}")] for m in TRAJES_VALIDOS]
+        await update.message.reply_text("👕 Escolha o modelo:", reply_markup=InlineKeyboardMarkup(keyboard))
+
+
+async def traje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "traje_cancel":
+        await query.edit_message_text("❌ Cancelado.")
+        return
+    if query.data.startswith("trajemenu_"):
+        resto = query.data.replace("trajemenu_", "")
+        modelo, player_id = resto.split("_", 1)
+        keyboard = [[
+            InlineKeyboardButton("✅ Confirmar", callback_data=f"traje_confirm_{modelo}_{player_id}"),
+            InlineKeyboardButton("❌ Cancelar", callback_data="traje_cancel")
+        ]]
+        await query.edit_message_text(
+            f"👕 Confirma o envio do traje *{modelo}* (R$12,00) para `{player_id}`?",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="Markdown"
+        )
+        return
+    if query.data.startswith("traje_confirm_"):
+        resto = query.data.replace("traje_confirm_", "")
+        modelo, player_id = resto.split("_", 1)
+        await query.edit_message_text("📦 Enviando traje, aguarde...")
+        try:
+            resp = requests.post(
+                f"{PASSE_BASE_URL}/api/v1/order-traje",
+                headers={"Content-Type": "application/json"},
+                json={"token": PASSE_API_TOKEN, "player_id": player_id, "modelo": modelo},
+                timeout=30
+            )
+            data = resp.json()
+            if data.get("success"):
+                msg = (
+                    f"✅ Traje enviado!\n"
+                    f"━━━━━━━━━━━━\n"
+                    f"👤 UID: {player_id}\n"
+                    f"👕 Modelo: {data.get('modelo_nome', modelo)}\n"
+                    f"💵 Debitado: R${data.get('valor_debitado', '?')}\n"
+                    f"💰 Saldo atual: R${data.get('saldo_atual', '?')}"
+                )
+            else:
+                msg = f"❌ {data.get('message', 'Erro ao enviar traje.')}"
+            await query.edit_message_text(msg)
+        except Exception as e:
+            await query.edit_message_text(f"❌ Erro: {str(e)}")
+
+
+# ===================== /emote <uid> =====================
+async def emote(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Uso: /emote <uid>")
+        return
+    player_id = context.args[0]
+    try:
+        resp = requests.get(f"{PASSE_BASE_URL}/api/v1/emotes", timeout=15)
+        data = resp.json()
+        emotes = data.get("emotes", [])
+        if not emotes:
+            await update.message.reply_text("❌ Nenhum emote disponível na vitrine agora.")
+            return
+        keyboard = [
+            [InlineKeyboardButton(f"{e['nome']} - R${e['preco']}", callback_data=f"emote_pick_{e['slug']}_{player_id}")]
+            for e in emotes
+        ]
+        await update.message.reply_text("🎭 Escolha o emote:", reply_markup=InlineKeyboardMarkup(keyboard))
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+
+
+async def emote_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "emote_cancel":
+        await query.edit_message_text("❌ Cancelado.")
+        return
+    if query.data.startswith("emote_pick_"):
+        resto = query.data.replace("emote_pick_", "")
+        slug, player_id = resto.rsplit("_", 1)
+        keyboard = [[
+            InlineKeyboardButton("✅ Confirmar", callback_data=f"emote_confirm_{slug}_{player_id}"),
+            InlineKeyboardButton("❌ Cancelar", callback_data="emote_cancel")
+        ]]
+        await query.edit_message_text(
+            f"🎭 Confirma o envio do emote *{slug}* para `{player_id}`?",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="Markdown"
+        )
+        return
+    if query.data.startswith("emote_confirm_"):
+        resto = query.data.replace("emote_confirm_", "")
+        slug, player_id = resto.rsplit("_", 1)
+        await query.edit_message_text("📦 Enviando emote, aguarde...")
+        try:
+            resp = requests.post(
+                f"{PASSE_BASE_URL}/api/v1/order-emote",
+                headers={"Content-Type": "application/json"},
+                json={"token": PASSE_API_TOKEN, "player_id": player_id, "emote": slug},
+                timeout=30
+            )
+            data = resp.json()
+            if resp.status_code == 207:
+                await query.edit_message_text("⚠️ Resultado incerto — NÃO reenvie. Confira manualmente antes de tentar de novo.")
+                return
+            if data.get("success"):
+                msg = (
+                    f"✅ Emote enviado!\n"
+                    f"━━━━━━━━━━━━\n"
+                    f"👤 UID: {player_id}\n"
+                    f"🎭 Emote: {data.get('emote_nome', slug)}\n"
+                    f"💵 Debitado: R${data.get('valor_debitado', '?')}\n"
+                    f"💰 Saldo atual: R${data.get('saldo_atual', '?')}"
+                )
+            else:
+                msg = f"❌ {data.get('message', 'Erro ao enviar emote.')}"
+            await query.edit_message_text(msg)
+        except Exception as e:
+            await query.edit_message_text(f"❌ Erro: {str(e)}")
+
+
+# ===================== /codiguin [produto] =====================
+async def codiguin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    produto = context.args[0] if context.args else "snickers"
+    try:
+        resp = requests.get(f"{PASSE_BASE_URL}/api/v1/codiguins", timeout=15)
+        data = resp.json()
+        opcoes = {c["produto"]: c for c in data.get("codiguins", [])}
+        if produto not in opcoes:
+            disponiveis = ", ".join(opcoes.keys())
+            await update.message.reply_text(f"❌ Produto inválido. Disponíveis: {disponiveis}")
+            return
+        info = opcoes[produto]
+        if not info.get("disponivel"):
+            await update.message.reply_text(f"❌ Estoque esgotado para {produto}.")
+            return
+        keyboard = [[
+            InlineKeyboardButton("✅ Confirmar", callback_data=f"codiguin_confirm_{produto}"),
+            InlineKeyboardButton("❌ Cancelar", callback_data="codiguin_cancel")
+        ]]
+        await update.message.reply_text(
+            f"🎟️ Confirma a compra de *{info.get('nome', produto)}* por R${info.get('preco', '?')}?\n"
+            f"Restam {info.get('disponiveis', '?')} código(s).",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro: {str(e)}")
+
+
+async def codiguin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "codiguin_cancel":
+        await query.edit_message_text("❌ Cancelado.")
+        return
+    if query.data.startswith("codiguin_confirm_"):
+        produto = query.data.replace("codiguin_confirm_", "")
+        await query.edit_message_text("📦 Gerando código, aguarde...")
+        request_id = str(uuid.uuid4())
+        try:
+            resp = requests.post(
+                f"{PASSE_BASE_URL}/api/v1/order-codiguin",
+                headers={"Content-Type": "application/json", "X-Request-Id": request_id},
+                json={"token": PASSE_API_TOKEN, "produto": produto},
+                timeout=30
+            )
+            data = resp.json()
+            if data.get("success"):
+                repetido = " (repetido — mesma compra anterior)" if data.get("repetido") else ""
+                msg = (
+                    f"✅ Código gerado!{repetido}\n"
+                    f"━━━━━━━━━━━━\n"
+                    f"🎟️ Produto: {data.get('produto_nome', produto)}\n"
+                    f"🔑 Código: `{data.get('codigo', '?')}`\n"
+                    f"💵 Debitado: R${data.get('valor_debitado', '?')}\n"
+                    f"💰 Saldo atual: R${data.get('saldo_atual', '?')}\n"
+                    f"📦 Estoque restante: {data.get('estoque_restante', '?')}"
+                )
+            else:
+                msg = f"❌ {data.get('message', 'Erro ao gerar código.')}"
+            await query.edit_message_text(msg, parse_mode="Markdown")
+        except Exception as e:
+            await query.edit_message_text(f"❌ Erro: {str(e)}")
+
+
+app.add_handler(CommandHandler("saldo", saldo))
+app.add_handler(CommandHandler("estoque", estoque))
+app.add_handler(CommandHandler("personagem", personagem))
+app.add_handler(CallbackQueryHandler(personagem_callback, pattern="^personagem_"))
+app.add_handler(CommandHandler("traje", traje))
+app.add_handler(CallbackQueryHandler(traje_callback, pattern="^traje|^trajemenu_"))
+app.add_handler(CommandHandler("emote", emote))
+app.add_handler(CallbackQueryHandler(emote_callback, pattern="^emote_"))
+app.add_handler(CommandHandler("codiguin", codiguin))
+app.add_handler(CallbackQueryHandler(codiguin_callback, pattern="^codiguin_"))
+
+
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
