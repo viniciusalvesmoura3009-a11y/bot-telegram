@@ -478,6 +478,11 @@ async def mostrar_pagina_menu(update, context, pagina):
                 ("📅 /agendar", "cmd_agendar"),
                 ("📋 /listagenda", "cmd_listagenda"),
                 ("📦 /estoque", "cmd_estoque"),
+                ("💰 /saldo", "cmd_saldo"),
+                ("🧑 /personagem", "cmd_personagem"),
+                ("👕 /traje", "cmd_traje"),
+                ("🎭 /emote", "cmd_emote"),
+                ("🎟️ /codiguin", "cmd_codiguin"),
             ]
         },
         2: {
@@ -565,6 +570,11 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "cmd_agendar": ("📅 /agendar", "Agenda um passe para o próximo dia 01.\n\nComo usar:\n/agendar <uid>"),
         "cmd_listagenda": ("📋 /listagenda", "Lista todos os agendamentos ativos."),
         "cmd_estoque": ("📦 /estoque", "Mostra o estoque e preço atual do passe."),
+        "cmd_saldo": ("💰 /saldo", "Mostra seu saldo e precos de custo.\n\nUse:\n/saldo"),
+        "cmd_personagem": ("🧑 /personagem", "Envia pacote de 50 personagens.\n\nComo usar:\n/personagem <uid>"),
+        "cmd_traje": ("👕 /traje", "Envia um traje.\n\nComo usar:\n/traje <uid> [modelo]"),
+        "cmd_emote": ("🎭 /emote", "Envia um emote da vitrine.\n\nComo usar:\n/emote <uid>"),
+        "cmd_codiguin": ("🎟️ /codiguin", "Gera um codigo promocional.\n\nComo usar:\n/codiguin [produto]"),
         "cmd_likes": ("👍 /like", "Envia likes para um jogador.\n\nComo usar:\n/like <uid>"),
         "cmd_autolike": ("🔄 /autolike", "Ativa auto-like diário.\n\nComo usar:\n/autolike <dias>"),
         "cmd_stopauto": ("🛢 /stopauto", "Para o auto-like ativo.\n\nComo usar:\n/stopauto"),
