@@ -1929,6 +1929,20 @@ PASSE_BASE_URL = "https://passe.soyxapasse.com.br"
 TRAJES_VALIDOS = ["branco", "preto", "diabinha", "anjinha", "astronauta", "spacefarer", "velho_rabujento"]
 
 
+def preco_venda(preco_original):
+    if preco_original == 10:
+        return 15
+    if preco_original == 12:
+        return 18
+    return preco_original
+
+
+def preco_traje(modelo):
+    if modelo in ("preto", "branco"):
+        return 25
+    return 20
+
+
 # ===================== /saldo =====================
 async def saldo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -2056,12 +2070,12 @@ async def traje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("❌ Cancelar", callback_data="traje_cancel")
         ]]
         await update.message.reply_text(
-            f"👕 Confirma o envio do traje *{modelo}* (R$12,00) para `{player_id}`?",
+            f"👕 Confirma o envio do traje *{modelo}* (R${preco_traje(modelo)},00) para `{player_id}`?",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="Markdown"
         )
     else:
-        keyboard = [[InlineKeyboardButton(m, callback_data=f"trajemenu_{m}_{player_id}")] for m in TRAJES_VALIDOS]
+        keyboard = [[InlineKeyboardButton(f"{m} - R${preco_traje(m)},00", callback_data=f"trajemenu_{m}_{player_id}")] for m in TRAJES_VALIDOS]
         await update.message.reply_text("👕 Escolha o modelo:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
@@ -2079,7 +2093,7 @@ async def traje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("❌ Cancelar", callback_data="traje_cancel")
         ]]
         await query.edit_message_text(
-            f"👕 Confirma o envio do traje *{modelo}* (R$12,00) para `{player_id}`?",
+            f"👕 Confirma o envio do traje *{modelo}* (R${preco_traje(modelo)},00) para `{player_id}`?",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="Markdown"
         )
@@ -2102,7 +2116,7 @@ async def traje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"━━━━━━━━━━━━\n"
                     f"👤 UID: {player_id}\n"
                     f"👕 Modelo: {data.get('modelo_nome', modelo)}\n"
-                    f"💵 Debitado: R${data.get('valor_debitado', '?')}\n"
+                    f"💵 Valor: R${preco_traje(modelo)},00\n"
                     f"💰 Saldo atual: R${data.get('saldo_atual', '?')}"
                 )
             else:
@@ -2126,7 +2140,7 @@ async def emote(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Nenhum emote disponível na vitrine agora.")
             return
         keyboard = [
-            [InlineKeyboardButton(f"{e['nome']} - R${e['preco']}", callback_data=f"emote_pick_{e['slug']}_{player_id}")]
+            [InlineKeyboardButton(f"{e['nome']} - R${preco_venda(e['preco']):.2f}", callback_data=f"emote_pick|{e['slug']}|{player_id}|{preco_venda(e['preco'])}")]
             for e in emotes
         ]
         await update.message.reply_text("🎭 Escolha o emote:", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -2140,22 +2154,20 @@ async def emote_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "emote_cancel":
         await query.edit_message_text("❌ Cancelado.")
         return
-    if query.data.startswith("emote_pick_"):
-        resto = query.data.replace("emote_pick_", "")
-        slug, player_id = resto.rsplit("_", 1)
+    if query.data.startswith("emote_pick|"):
+        _, slug, player_id, venda = query.data.split("|")
         keyboard = [[
-            InlineKeyboardButton("✅ Confirmar", callback_data=f"emote_confirm_{slug}_{player_id}"),
+            InlineKeyboardButton("✅ Confirmar", callback_data=f"emote_confirm|{slug}|{player_id}|{venda}"),
             InlineKeyboardButton("❌ Cancelar", callback_data="emote_cancel")
         ]]
         await query.edit_message_text(
-            f"🎭 Confirma o envio do emote *{slug}* para `{player_id}`?",
+            f"🎭 Confirma o envio do emote *{slug}* (R${venda}) para `{player_id}`?",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="Markdown"
         )
         return
-    if query.data.startswith("emote_confirm_"):
-        resto = query.data.replace("emote_confirm_", "")
-        slug, player_id = resto.rsplit("_", 1)
+    if query.data.startswith("emote_confirm|"):
+        _, slug, player_id, venda = query.data.split("|")
         await query.edit_message_text("📦 Enviando emote, aguarde...")
         try:
             resp = requests.post(
@@ -2174,7 +2186,7 @@ async def emote_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"━━━━━━━━━━━━\n"
                     f"👤 UID: {player_id}\n"
                     f"🎭 Emote: {data.get('emote_nome', slug)}\n"
-                    f"💵 Debitado: R${data.get('valor_debitado', '?')}\n"
+                    f"💵 Valor: R${venda}\n"
                     f"💰 Saldo atual: R${data.get('saldo_atual', '?')}"
                 )
             else:
