@@ -1570,7 +1570,10 @@ async def agendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             try:
                 resp_nome = requests.get(f"https://passe.soyxapasse.com.br/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=30)
-                nome_agendamento = resp_nome.json().get("nickname", player_id)
+                data_nome = resp_nome.json()
+                nome_agendamento = data_nome.get("nickname", player_id)
+                nick_confirmado = data_nome.get("nickname", player_id)
+                nivel_confirmado = data_nome.get("level", "?")
             except Exception:
                 nome_agendamento = player_id
             resp = requests.post(
@@ -1587,8 +1590,8 @@ async def agendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 raise Exception(f"API retornou algo inválido (status {resp.status_code}): {resp.text[:200]}")
             if data.get("success"):
                 jogador = data.get("jogador", {})
-                nick = jogador.get("nickname", player_id)
-                nivel = jogador.get("level", "?")
+                nick = nick_confirmado
+                nivel = nivel_confirmado
                 agendamento_id = data.get("agendamento_id", "?")
                 msg = (
                     f"✅ Agendamento realizado com sucesso!\n"
