@@ -359,8 +359,8 @@ async def autolike_loop(app):
                         f"| 🌎 Região: " + str(resultado["regiao"]) + "\n"
                         f"| 📈 Likes antes: " + str(resultado["likes_antes"]) + "\n"
                         f"| 🚀 Enviados agora: " + str(resultado["likes_enviados"]) + "\n"
-                        f"│ ✅ Likes Depois: " + str(resultado["likes_depois"]) + "\n\n"
-                        f"🔱 Dono: ✝REBELDE ✝VENDAS"
+                        f"| ✅ Likes Depois: " + str(resultado["likes_depois"]) + "\n\n"
+                        f"🔱 Dono: ༔REBELDE ༔VENDAS"
                     )
                     await app.bot.send_message(chat_id=chat_id, text=msg)
                     if isinstance(info, dict):
