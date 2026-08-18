@@ -1604,6 +1604,21 @@ async def agendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"💎 OBRIGADO PELA COMPRA!\n"
                     f"༒REBELDE༒ VENDAS"
                 )
+                from datetime import datetime as _dt
+                try:
+                    _usos_ag = load_usos()
+                    if "agendamentos_passe" not in _usos_ag:
+                        _usos_ag["agendamentos_passe"] = []
+                    _usos_ag["agendamentos_passe"].append({
+                        "id": agendamento_id,
+                        "uid": player_id,
+                        "nick": nick,
+                        "nivel": nivel,
+                        "data": _dt.now().strftime("%Y-%m-%d %H:%M"),
+                    })
+                    save_usos(_usos_ag)
+                except Exception:
+                    pass
                 await query.edit_message_text(msg)
             else:
                 await query.edit_message_text(f"❌ {data.get('message', 'Erro ao agendar.')}")
@@ -1616,54 +1631,27 @@ app.add_handler(CallbackQueryHandler(agendar_callback, pattern="^agendar_"))
 async def listagenda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.message.from_user.id)
     if uid != str(DONO_ID) and uid not in PASSE_USUARIOS:
-        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        await update.message.reply_text("\u274C Voc\u00ea n\u00e3o tem permiss\u00e3o para usar este comando.")
         return
-    await update.message.reply_text("🔍 Consultando agendamentos, aguarde...")
-    try:
-        resp = requests.get(
-            "https://storcktec.com.br/api/v1/agendamentos",
-            headers={
-                "X-API-Token": STORCKTEC_TOKEN,
-                "X-API-Senha": STORCKTEC_SENHA
-            },
-            timeout=30
-        )
-        if resp.status_code != 200 or not resp.text.strip():
-            raise Exception(f"API fora do ar (status {resp.status_code}): {resp.text[:200] or 'resposta vazia'}")
-        try:
-            data = resp.json()
-        except ValueError:
-            raise Exception(f"API retornou algo inválido (status {resp.status_code}): {resp.text[:200]}")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Erro: {str(e)}")
+    from datetime import datetime as _dt3
+    usos_ag = load_usos()
+    todos = usos_ag.get("agendamentos_passe", [])
+    mes_atual = _dt3.now().strftime("%Y-%m")
+    do_mes = [a for a in todos if a.get("data", "").startswith(mes_atual)]
+    if not do_mes:
+        await update.message.reply_text("\U0001F4C5 Nenhum agendamento neste m\u00eas ainda.")
         return
-
-    agendamentos = data.get("agendamentos", [])
-    if not agendamentos:
-        await update.message.reply_text("📅 Nenhum agendamento encontrado.")
-        return
-
-    emojis_status = {
-        "AGENDADO": "🕒",
-        "ENVIADO": "✅",
-        "ESTORNADO": "💸",
-        "FALHA": "❌"
-    }
-
-    msg = "📅 LISTA DE AGENDAMENTOS\n━━━━━━━━━━━━━━\n"
-    for a in agendamentos:
-        status = a.get("status", "?")
-        emoji = emojis_status.get(status, "❔")
+    msg = f"\U0001F4C5 *AGENDAMENTOS DO M\u00caS* ({mes_atual})\n\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\n"
+    for a in do_mes:
         msg += (
-            f"{emoji} ID: {a.get('id', '?')}\n"
-            f"   UID: {a.get('uid_ff', '?')}\n"
-                f"   Custo: R$6.00\n"
-            f"   Status: {status}\n"
-            f"━━━━━━━━━━━━━━\n"
+            f"\U0001F464 {a.get('nick', '?')}\n"
+            f"   UID: {a.get('uid', '?')}\n"
+            f"   N\u00edvel: {a.get('nivel', '?')}\n"
+            f"   Data: {a.get('data', '?')}\n"
+            f"   ID: {a.get('id', '?')}\n\n"
         )
-
-    for i in range(0, len(msg), 4000):
-        await update.message.reply_text(msg[i:i+4000])
+    msg += f"Total: {len(do_mes)} agendamento(s) este m\u00eas."
+    await update.message.reply_text(msg, parse_mode="Markdown")
 
 app.add_handler(CommandHandler("listagenda", listagenda))
 
