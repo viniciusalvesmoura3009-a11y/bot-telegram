@@ -1168,6 +1168,8 @@ async def token(update, context):
 
 app.add_handler(CommandHandler("token", token))
 
+IA_COOLDOWN = {}
+
 async def ia(update, context):
     uid = str(update.message.from_user.id)
     if uid != str(DONO_ID):
@@ -1178,6 +1180,14 @@ async def ia(update, context):
     if not context.args:
         await update.message.reply_text("Uso: /ia <pergunta>")
         return
+    import time as _time_ia
+    _agora_ia = _time_ia.time()
+    _ultimo_ia = IA_COOLDOWN.get(uid, 0)
+    if _agora_ia - _ultimo_ia < 30:
+        _restante_ia = int(30 - (_agora_ia - _ultimo_ia))
+        await update.message.reply_text(f"⏳ Aguarde {_restante_ia}s para usar o /ia novamente.")
+        return
+    IA_COOLDOWN[uid] = _agora_ia
     prompt = " ".join(context.args)
     chat_id = str(update.message.from_user.id)[:6]
     await update.message.reply_text("🤖 Processando sua pergunta...")
