@@ -1212,7 +1212,7 @@ async def ia(update, context):
         else:
             await update.message.reply_text("❌ Não obtive resposta da IA. Tente novamente.")
     except Exception as e:
-        await update.message.reply_text(f"❌ Erro: {str(e)}")
+        await update.message.reply_text("🔧 Comando /ia temporariamente indisponível. Tente novamente mais tarde.")
 
 app.add_handler(CommandHandler("ia", ia))
 
