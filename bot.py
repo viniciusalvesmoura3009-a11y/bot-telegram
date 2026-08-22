@@ -225,7 +225,7 @@ async def usosgeral(update, context):
             "🌎 Região: " + str(regiao) + "\n\n"
             "📜 Bio Antiga:\n" + bio_antiga + "\n\n"
             "✨ Nova Bio:\n" + bio_nova + "\n\n"
-            "🔱 Dono: ༒REBELDE ༒VENDAS"
+            "🔱 Dono: ༒REBELDE༒VENDAS"
         )
         await update.message.reply_text(msg)
     else:
@@ -1748,7 +1748,7 @@ async def like_command(update, context):
             f"│  📈 Likes antes: {resultado['likes_antes']}\n"
             f"│  🚀 Enviados agora: {resultado['likes_enviados']}\n"
             f"│ ✅ Likes  Depois: {resultado['likes_depois']}\n\n"
-            f"🔱 Dono: ༒REBELDE ༒VENDAS"
+            f"🔱 Dono: ༒REBELDE༒VENDAS"
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
         return
