@@ -349,6 +349,12 @@ async def autolike_loop(app):
                     except:
                         pass
                     continue
+
+            agora_hist_check = datetime.utcnow() - timedelta(hours=3)
+            data_hoje = agora_hist_check.strftime("%d/%m/%Y")
+            if isinstance(info, dict) and info.get("ultimo_envio_data") == data_hoje:
+                continue
+
             try:
                 resultado = enviar_like(uid, region="BR")
                 if resultado.get("sucesso"):
@@ -370,6 +376,7 @@ async def autolike_loop(app):
                         historico = info.get("historico", {})
                         historico[data_hist] = historico.get(data_hist, 0) + resultado["likes_enviados"]
                         info["historico"] = historico
+                        info["ultimo_envio_data"] = data_hist
                         uids_auto[uid] = info
                         save_auto(uids_auto)
             except Exception as e:
