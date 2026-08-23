@@ -1451,7 +1451,7 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         player_id = query.data.replace("passe_confirm_", "")
         await query.edit_message_text("📦 Enviando passe, aguarde...")
         try:
-            resp = requests.post(
+            resp = post_com_retry(
                 "https://passe.soyxapasse.com.br/api/v1/order",
                 headers={
                     "Content-Type": "application/json",
