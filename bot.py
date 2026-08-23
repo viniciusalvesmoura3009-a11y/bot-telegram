@@ -338,6 +338,7 @@ async def stop_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def autolike_loop(app):
     while True:
+        print(f"[AUTOLIKE LOOP] Ciclo iniciado as {datetime.utcnow()} UTC, total UIDs: {len(uids_auto)}")
         for uid, info in list(uids_auto.items()):
             chat_id = info["chat_id"] if isinstance(info, dict) else info
             if isinstance(info, dict):
