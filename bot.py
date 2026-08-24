@@ -26,6 +26,22 @@ FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
 PASSE_API_TOKEN = os.getenv("PASSE_API_TOKEN")
+
+def post_com_retry(url, headers=None, json=None, timeout=30, tentativas=3, espera=2):
+    import time
+    ultimo_erro = None
+    for i in range(tentativas):
+        try:
+            resp = requests.post(url, headers=headers, json=json, timeout=timeout)
+            if resp.status_code in (502, 503, 504):
+                ultimo_erro = Exception(f"API instavel (status {resp.status_code}), tentativa {i+1}/{tentativas}")
+                time.sleep(espera)
+                continue
+            return resp
+        except requests.exceptions.RequestException as e:
+            ultimo_erro = e
+            time.sleep(espera)
+    raise ultimo_erro
 BASE_URL = "https://fluxdevservice.com/api/frifas"
 DONO_ID = 7895922394
 
