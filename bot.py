@@ -136,13 +136,17 @@ def _gist():
 
 def load_usos():
     try:
-        r = _req.get(f"https://api.github.com/gists/{_gist()}", headers=_gh()).json()
+        r = _req.get(f"https://api.github.com/gists/{_gist()}", headers=_gh(), timeout=20).json()
         return _json.loads(r["files"][GIST_FILENAME]["content"])
-    except: return {}
+    except Exception as e:
+        print(f"[LOAD_USOS] ERRO ao carregar do Gist, mantendo dados antigos em memoria: {e}")
+        raise
 
 def save_usos(d):
-    try: _req.patch(f"https://api.github.com/gists/{_gist()}", headers=_gh(), json={"files":{GIST_FILENAME:{"content":_json.dumps(d)}}})
-    except: pass
+    try:
+        _req.patch(f"https://api.github.com/gists/{_gist()}", headers=_gh(), json={"files":{GIST_FILENAME:{"content":_json.dumps(d)}}}, timeout=20)
+    except Exception as e:
+        print(f"[SAVE_USOS] ERRO ao salvar no Gist: {e}")
 
 
 LIMITE_DIARIO = 100
