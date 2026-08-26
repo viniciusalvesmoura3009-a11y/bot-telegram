@@ -558,6 +558,7 @@ async def mostrar_pagina_menu(update, context, pagina):
                 ("📊 /resumoautolike", "cmd_resumoautolike"),
                 ("🏷️ /title", "cmd_title"),
                 ("📅 /usohoje", "cmd_usohoje"),
+                    ("💰 /vendas", "cmd_vendas"),
             ]
         }
     }
@@ -640,6 +641,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "cmd_resumoautolike": ("📋 /resumoautolike", "Mostra um resumo dos autolikes ativos."),
         "cmd_title": ("📋 /title", "Define o titulo/cargo de um membro no grupo."),
         "cmd_usohoje": ("📋 /usohoje", "Mostra o uso do bot hoje."),
+        "cmd_vendas": ("📋 /vendas", "Mostra o total de vendas confirmadas."),
         "cmd_saldo": ("💰 /saldo", "Mostra seu saldo e precos de custo.\n\nUse:\n/saldo"),
         "cmd_personagem": ("🧑 /personagem", "Envia pacote de 50 personagens.\n\nComo usar:\n/personagem <uid>"),
         "cmd_traje": ("👕 /traje", "Envia um traje.\n\nComo usar:\n/traje <uid> [modelo]"),
@@ -2026,6 +2028,17 @@ async def usohoje(update, context):
     await update.message.reply_text(f"📊 Uso hoje: {qtd}/{LIMITE_DIARIO} (restam {restam})")
 
 app.add_handler(CommandHandler("usohoje", usohoje))
+
+async def vendas(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("Apenas o dono pode usar este comando.")
+        return
+    usos = load_usos()
+    total_vendas = len(usos.get("pagamentos_processados", []))
+    total_ativos = len(usos.get("auto_data", {}))
+    await update.message.reply_text(f"Total de vendas confirmadas: {total_vendas}\nUIDs com autolike ativo: {total_ativos}")
+
+app.add_handler(CommandHandler("vendas", vendas))
 
 app.add_handler(CommandHandler("autolike", start_autolike))
 app.add_handler(CommandHandler("stopauto", stop_autolike))
