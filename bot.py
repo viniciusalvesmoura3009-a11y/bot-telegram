@@ -188,6 +188,8 @@ def total_geral_hoje():
     hoje = _dt.now().strftime("%Y-%m-%d")
     total = 0
     for uid, d in usos.items():
+        if not isinstance(d, dict):
+            continue
         if d.get("data") == hoje:
             total += d.get("qtd", 0)
     return total
