@@ -374,7 +374,9 @@ async def stop_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🗑️ AUTOLIKE REMOVIDO\n\n🆔 UID: " + str(uid) + "\n🚫 Auto like desativado.")
 
 async def autolike_loop(app):
+    global uids_auto
     while True:
+        uids_auto = load_auto()
         print(f"[AUTOLIKE LOOP] Ciclo iniciado as {datetime.utcnow()} UTC, total UIDs: {len(uids_auto)}")
         for uid, info in list(uids_auto.items()):
             chat_id = info["chat_id"] if isinstance(info, dict) else info
