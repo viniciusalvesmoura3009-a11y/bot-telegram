@@ -134,19 +134,34 @@ def _gist():
     r = _req.post("https://api.github.com/gists", headers=_gh(), json={"description":"usos","public":False,"files":{GIST_FILENAME:{"content":"{}"}}}).json()
     GIST_ID = r["id"]; return GIST_ID
 
+_LAST_ETAG = None
+
 def load_usos():
+    global _LAST_ETAG
     try:
-        r = _req.get(f"https://api.github.com/gists/{_gist()}", headers=_gh(), timeout=20).json()
-        return _json.loads(r["files"][GIST_FILENAME]["content"])
+        r = _req.get(f"https://api.github.com/gists/{_gist()}", headers=_gh(), timeout=20)
+        _LAST_ETAG = r.headers.get("ETag")
+        return _json.loads(r.json()["files"][GIST_FILENAME]["content"])
     except Exception as e:
         print(f"[LOAD_USOS] ERRO ao carregar do Gist, mantendo dados antigos em memoria: {e}")
         raise
 
 def save_usos(d):
+    global _LAST_ETAG
     try:
-        _req.patch(f"https://api.github.com/gists/{_gist()}", headers=_gh(), json={"files":{GIST_FILENAME:{"content":_json.dumps(d)}}}, timeout=20)
+        headers = dict(_gh())
+        if _LAST_ETAG:
+            headers["If-Match"] = _LAST_ETAG
+        r = _req.patch(f"https://api.github.com/gists/{_gist()}", headers=headers, json={"files":{GIST_FILENAME:{"content":_json.dumps(d)}}}, timeout=20)
+        if r.status_code == 412:
+            print("[SAVE_USOS] CONFLITO: dados no Gist foram alterados por outro processo desde o ultimo load. Salvamento cancelado para nao sobrescrever dados novos.")
+            return False
+        r.raise_for_status()
+        _LAST_ETAG = r.headers.get("ETag")
+        return True
     except Exception as e:
         print(f"[SAVE_USOS] ERRO ao salvar no Gist: {e}")
+        return False
 
 
 LIMITE_DIARIO = 100
