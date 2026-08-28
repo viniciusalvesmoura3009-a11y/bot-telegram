@@ -292,52 +292,46 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /info <uid>")
         return
     uid = context.args[0]
-    resp = requests.get(f"{BASE_URL}/info-player", params={"key": FRIFAS_KEY, "id": uid})
     try:
+        resp = requests.get("https://ggxdev.com/api/v1/player-info", params={"uid": uid, "region": "BR", "key": os.environ.get("M4S_API_KEY", "")}, timeout=20)
         data = resp.json()
-    except:
+    except Exception:
         await update.message.reply_text("API fora do ar!")
         return
-    if data.get("success") or data.get("sucesso"):
-        d = data["data"][0]["conta"]
-        pet_id_raw = d.get("pet", {}).get("id", None)
-        pet_nome = PETS.get(pet_id_raw, "Pet ID: " + str(pet_id_raw)) if pet_id_raw else "Sem pet"
-        pet_level = d.get("pet", {}).get("level", "?")
-        pet_xp = d.get("pet", {}).get("experiencia", "?")
-        pet_skin = d.get("pet", {}).get("skin_id", "Sem skin")
-        pet_habilidade = d.get("pet", {}).get("habilidade_id", "Sem habilidade")
-        roupas = d.get("perfil", {}).get("roupas", [])
-        cla = d.get("cla", {})
-        rank_br = d.get("rank_br", {})
-        rank_cs = d.get("rank_cs", {})
-        social = d.get("informacoes_sociais", {})
+    if data.get("success"):
+        d = data.get("data", {})
+        basic = d.get("basicInfo", {})
+        perfil = d.get("profileInfo", {})
+        social = d.get("socialInfo", {})
+        credito = d.get("creditScoreInfo", {})
+        roupas = perfil.get("clothes", [])
+
+        def _fmt_ts(ts):
+            try:
+                return datetime.fromtimestamp(int(ts)).strftime("%d/%m/%Y %H:%M")
+            except Exception:
+                return str(ts) if ts else "?"
+
         msg = (
-            "📊 INFORMACOES DO JOGADOR\n\n"
-            "👤 Nick: " + str(d.get("nome_conta", "?")) + "\n"
-            "🆔 ID: " + str(d.get("id_conta", "?")) + "\n"
-            "📈 Level: " + str(d.get("level", "?")) + "\n"
-            "⭐ XP: " + ("{:,}".format(int(d.get("experiencia", 0))) if str(d.get("experiencia","?")).isdigit() else str(d.get("experiencia","?"))) + "\n"
-            "❤️ Likes: " + ("{:,}".format(int(d.get("likes", 0))) if str(d.get("likes","?")).isdigit() else str(d.get("likes","?"))) + "\n"
-            "🌎 Regiao: " + str(d.get("region", "?")) + "\n" + "👑 Prime Level: " + str(d.get("prime_level", "0")) + "\n" + "🎮 Versão do jogo: " + str(d.get("release_version", "?")) + "\n\n"
-            "🐾 Pet: " + str(pet_nome) + "\n"
-            "🐾 Pet Level: " + str(pet_level) + "\n"
-            "🐾 Pet XP: " + str(pet_xp) + "\n\n"
-            "👕 Total de Roupas: " + str(len(roupas)) + "\n\n"
-            "🏰 Cla: " + str(cla.get("nome", "Sem cla")) + "\n"
-            "🏰 Level do Cla: " + str(cla.get("level", "?")) + "\n"
-            "🏰 Membros: " + str(cla.get("membros", "?")) + "\n"
-            "👑 Capitao: " + str(cla.get("capitao_nome", "?")) + "\n\n"
-            "🎖️ Rank BR: " + str(rank_br.get("pontos", "?")) + " pts\n"
-            "🎖️ Rank CS: " + str(rank_cs.get("pontos", "?")) + " pts\n"
-            "🏅 Badges: " + str(d.get("badge", {}).get("quantidade", "?")) + "\n"
-            "⭐ Credibilidade: " + str(d.get("credibilidade", "?")) + "\n\n"
-            "📅 Criado em: " + str(d.get("criado_em", "?")) + "\n"
-            "🕐 Ultimo login: " + str(d.get("ultimo_login", "?")) + "\n\n"
-            "📜 Bio: " + str(social.get("assinatura", "Sem bio"))
+            "\U0001F4CA INFORMA\u00c7\u00d5ES DO JOGADOR\n\n"
+            "\U0001F464 Nick: " + str(basic.get("nickname", "?")) + "\n"
+            "\U0001F194 ID: " + str(basic.get("accountId", uid)) + "\n"
+            "\U0001F4C8 Level: " + str(basic.get("level", "?")) + "\n"
+            "\u2B50 XP: " + str(basic.get("exp", "?")) + "\n"
+            "\U0001F30D Regi\u00e3o: " + str(basic.get("region", "?")) + "\n"
+            "\U0001F3AE Vers\u00e3o do jogo: " + str(basic.get("releaseVersion", "?")) + "\n\n"
+            "\U0001F3C6 Rank BR: " + str(basic.get("rankingPoints", "?")) + " pts\n"
+            "\U0001F3C6 Rank CS: " + str(basic.get("csRank", "?")) + "\n"
+            "\U0001F396\uFE0F Badge ID: " + str(basic.get("badgeId", "?")) + "\n"
+            "\u2B50 Credibilidade: " + str(credito.get("creditScore", "?")) + "\n\n"
+            "\U0001F455 Total de roupas: " + str(len(roupas)) + "\n\n"
+            "\U0001F4C5 Criado em: " + _fmt_ts(basic.get("createAt")) + "\n"
+            "\U0001F550 \u00daltimo login: " + _fmt_ts(basic.get("lastLoginAt")) + "\n\n"
+            "\U0001F4DC Bio: " + str(social.get("signature", "Sem bio"))
         )
         await update.message.reply_text(msg)
     else:
-        await update.message.reply_text("UID invalido!")
+        await update.message.reply_text("UID inv\u00e1lido!")
 
 async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not eh_dono(update.message.from_user.id) and update.message.from_user.id not in USUARIOS_AUTO:
