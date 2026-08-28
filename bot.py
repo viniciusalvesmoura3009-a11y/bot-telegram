@@ -1039,6 +1039,7 @@ async def list_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Erro: {data.get('status')}")
 
 app.add_handler(CommandHandler("infoopen", info_open))
+app.add_handler(CommandHandler("info", info_player))
 
 JSONBIN_KEY = "$2a$10$2zUobgrptNlTik8VoI2BhuWqDxXp/L9WwS1tOLHdSF5Wmo7wss2XS"
 JSONBIN_ID = "6a308646da38895dfec6a1b9"
