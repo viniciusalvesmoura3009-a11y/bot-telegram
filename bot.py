@@ -2444,4 +2444,13 @@ app.add_handler(CommandHandler("codiguin", codiguin))
 app.add_handler(CallbackQueryHandler(codiguin_callback, pattern="^codiguin_"))
 
 
+
+async def webhookinfo_cmd(update, context):
+    import os
+    tok = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    r = _req.get(f"https://api.telegram.org/bot{tok}/getWebhookInfo", timeout=20)
+    await update.message.reply_text(f"```\n{r.text}\n```", parse_mode="Markdown")
+
+app.add_handler(CommandHandler("webhookinfo", webhookinfo_cmd))
+
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
