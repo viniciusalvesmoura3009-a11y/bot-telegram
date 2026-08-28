@@ -320,7 +320,7 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "\u2B50 XP: " + str(basic.get("exp", "?")) + "\n"
             "\U0001F30D Regi\u00e3o: " + str(basic.get("region", "?")) + "\n"
             "\U0001F3AE Vers\u00e3o do jogo: " + str(basic.get("releaseVersion", "?")) + "\n\n"
-            "\U0001F3C6 Rank BR: " + str(basic.get("rankingPoints", "?")) + " pts\n"
+            "🏆 Rank BR: #" + str(basic.get("rank", "?")) + " (" + str(basic.get("rankingPoints", "?")) + " pts)\n"
             "\U0001F3C6 Rank CS: " + str(basic.get("csRank", "?")) + "\n"
             "\U0001F396\uFE0F Badge ID: " + str(basic.get("badgeId", "?")) + "\n"
             "\u2B50 Credibilidade: " + str(credito.get("creditScore", "?")) + "\n\n"
@@ -340,10 +340,19 @@ async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("Uso: /autolike <uid> <dias>\n\nExemplo: /autolike 123456789 30")
         return
+    global uids_auto
     uid = context.args[0]
     dias = int(context.args[1]) if len(context.args) > 1 else 30
+    uids_auto = load_auto()
     uids_auto[uid] = {"chat_id": update.message.chat_id, "dias_restantes": dias, "criado_em": datetime.now().strftime("%Y-%m-%d")}
-    save_auto(uids_auto)
+    ok_salvo = save_auto(uids_auto)
+    if not ok_salvo:
+        uids_auto = load_auto()
+        uids_auto[uid] = {"chat_id": update.message.chat_id, "dias_restantes": dias, "criado_em": datetime.now().strftime("%Y-%m-%d")}
+        ok_salvo = save_auto(uids_auto)
+    if not ok_salvo:
+        await update.message.reply_text("\u26a0\ufe0f Erro ao salvar o autolike, tente novamente em alguns segundos.")
+        return
     resultado = enviar_like(uid, region="BR")
     nick = resultado.get("nickname", uid)
     if resultado.get("sucesso"):
@@ -362,10 +371,19 @@ async def stop_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("Uso: /stopauto <uid>")
         return
+    global uids_auto
     uid = context.args[0]
+    uids_auto = load_auto()
     uids_auto.pop(uid, None)
-    save_auto(uids_auto)
-    await update.message.reply_text("🗑️ AUTOLIKE REMOVIDO\n\n🆔 UID: " + str(uid) + "\n🚫 Auto like desativado.")
+    ok_salvo = save_auto(uids_auto)
+    if not ok_salvo:
+        uids_auto = load_auto()
+        uids_auto.pop(uid, None)
+        ok_salvo = save_auto(uids_auto)
+    if not ok_salvo:
+        await update.message.reply_text("\u26a0\ufe0f Erro ao remover o autolike, tente novamente em alguns segundos.")
+        return
+    await update.message.reply_text("\U0001F4F1 AUTOLIKE REMOVIDO\n\n\U0001F194 UID: " + str(uid) + "\n\U0001F6AB Auto like desativado.")
 
 async def autolike_loop(app):
     global uids_auto
