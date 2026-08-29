@@ -150,7 +150,7 @@ def save_usos(d):
     global _LAST_ETAG
     try:
         headers = dict(_gh())
-        if _LAST_ETAG:
+        if False and _LAST_ETAG:
             headers["If-Match"] = _LAST_ETAG
         r = _req.patch(f"https://api.github.com/gists/{_gist()}", headers=headers, json={"files":{GIST_FILENAME:{"content":_json.dumps(d)}}}, timeout=20)
         if r.status_code == 412:
