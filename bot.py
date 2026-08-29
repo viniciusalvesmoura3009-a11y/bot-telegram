@@ -161,6 +161,10 @@ def save_usos(d):
         return True
     except Exception as e:
         print(f"[SAVE_USOS] ERRO ao salvar no Gist: {e}")
+        try:
+            print(f"[SAVE_USOS] DETALHE: {e.response.text}")
+        except Exception:
+            pass
         return False
 
 
