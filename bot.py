@@ -96,9 +96,10 @@ def save_auto(d):
     try:
         usos = load_usos()
         usos["auto_data"] = d
-        save_usos(usos)
-    except:
-        pass
+        return save_usos(usos)
+    except Exception as e:
+        print(f"[SAVE_AUTO] ERRO: {e}")
+        return False
 uids_auto = load_auto()
 
 PETS = {
