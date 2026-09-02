@@ -1469,9 +1469,11 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
         return
     if not context.args:
-        await update.message.reply_text("Uso: /passe <uid>")
+        await update.message.reply_text("Uso: /passe <uid> <mensagem opcional>\n\nExemplo: /passe 123456789 Aproveite o passe!")
         return
     player_id = context.args[0]
+    mensagem_passe = " ".join(context.args[1:])[:120] if len(context.args) > 1 else ""
+    context.user_data["passe_mensagem_pendente"] = mensagem_passe
     await update.message.reply_text("🔎 Buscando informações do jogador, aguarde...")
     try:
         resp_info = requests.get(f"https://passe.soyxapasse.com.br/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=40)
@@ -1491,12 +1493,14 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
         InlineKeyboardButton("❌ Cancelar", callback_data="passe_cancel")
     ]]
     markup = InlineKeyboardMarkup(keyboard)
+    linha_mensagem = f"💬 Mensagem: {mensagem_passe}\n\n" if mensagem_passe else ""
     msg = (
         f"🎁 CONFIRMAR ENVIO PASSE BOOYAH\n\n"
         f"👤 Nick: {nick}\n"
         f"🆔 ID: {player_id}\n"
         f"⭐ Level: {nivel}\n"
         f"🌍 Região: {regiao}\n\n"
+        + linha_mensagem +
         f"Confirma o envio do passe para esse jogador?"
     )
     await update.message.reply_text(msg, reply_markup=markup)
@@ -1517,7 +1521,7 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "Content-Type": "application/json",
                     "X-Bot-Name": "RebeldeFF"
                 },
-                json={"token": PASSE_API_TOKEN, "player_id": player_id},
+                json={"token": PASSE_API_TOKEN, "player_id": player_id, "mensagem": context.user_data.get("passe_mensagem_pendente", "")},
                 timeout=30
             )
             if resp.status_code != 200 or not resp.text.strip():
