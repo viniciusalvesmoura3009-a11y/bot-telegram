@@ -1472,7 +1472,8 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /passe <uid> <mensagem opcional>\n\nExemplo: /passe 123456789 Aproveite o passe!")
         return
     player_id = context.args[0]
-    mensagem_passe = " ".join(context.args[1:])[:120] if len(context.args) > 1 else ""
+    MENSAGEM_PASSE_PADRAO = "𝗢𝗕𝗥𝗜𝗚𝗔𝗗𝗢 𝗣𝗘𝗟𝗔 𝗖𝗢𝗠𝗣𝗥𝗔!\n\n༒ REBELDE  ༒ VENDAS ༒  AGRADECE  PELA COMPRA E SUA CONFIANÇA\n\nAproveite o( passe booyha ) ✌︎㋡"
+    mensagem_passe = " ".join(context.args[1:])[:120] if len(context.args) > 1 else MENSAGEM_PASSE_PADRAO
     context.user_data["passe_mensagem_pendente"] = mensagem_passe
     await update.message.reply_text("🔎 Buscando informações do jogador, aguarde...")
     try:
