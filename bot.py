@@ -26,6 +26,7 @@ FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
 PASSE_API_TOKEN = os.getenv("PASSE_API_TOKEN")
+LIKE2K_API_KEY = os.getenv("LIKE2K_API_KEY")
 
 def post_com_retry(url, headers=None, json=None, timeout=30, tentativas=3, espera=2):
     import time
@@ -1856,6 +1857,166 @@ app.add_handler(CommandHandler("like", like_command))
 app.add_handler(CommandHandler("menu", menu))
 app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu_|cmd_)"))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, anti_link))
+
+def enviar_like2k(uid, amount):
+    try:
+        api_key = os.getenv("LIKE2K_API_KEY")
+        if not api_key:
+            return {"sucesso": False, "erro": "sem_chave"}
+        headers = {"X-Api-Key": api_key, "Content-Type": "application/json"}
+        base_url = "https://Like2k.soyxapasse.com.br"
+
+        info_resp = requests.get(f"{base_url}/api/v1/uid/{uid}", headers=headers, timeout=15)
+        if info_resp.status_code in (401, 403):
+            return {"sucesso": False, "erro": "chave_invalida"}
+        if info_resp.status_code == 404:
+            return {"sucesso": False, "erro": "id_nao_encontrado"}
+        if info_resp.status_code != 200:
+            return {"sucesso": False, "erro": "falha"}
+        info = info_resp.json()
+
+        order_resp = requests.post(
+            f"{base_url}/api/v1/orders",
+            headers=headers,
+            json={"target_uid": str(uid), "amount": int(amount)},
+            timeout=20,
+        )
+        if order_resp.status_code in (401, 403):
+            return {"sucesso": False, "erro": "chave_invalida"}
+        if order_resp.status_code == 429:
+            return {"sucesso": False, "erro": "limite_diario"}
+        if order_resp.status_code not in (200, 201):
+            return {"sucesso": False, "erro": "falha"}
+        order = order_resp.json()
+
+        return {
+            "sucesso": True,
+            "nickname": info.get("nick", "Desconhecido"),
+            "uid": info.get("uid", uid),
+            "regiao": info.get("regiao", "BR"),
+            "likes_antes": info.get("likes", 0),
+            "requested_amount": order.get("requested_amount", amount),
+            "sent_amount": order.get("sent_amount", 0),
+            "remaining_amount": order.get("remaining_amount", 0),
+            "status": order.get("status", "desconhecido"),
+        }
+    except requests.exceptions.Timeout:
+        return {"sucesso": False, "erro": "timeout"}
+    except Exception:
+        return {"sucesso": False, "erro": "falha"}
+
+
+async def like2k_command(update, context):
+    user_id = update.message.from_user.id
+    dados_user = None
+    if not eh_dono(user_id):
+        usos = load_usos()
+        like2k_usuarios = usos.get("like2k_usuarios", {})
+        dados_user = like2k_usuarios.get(str(user_id))
+        if not dados_user:
+            await update.message.reply_text("\u274c Voce nao tem autorizacao para usar o /like2k. Fale com o dono.")
+            return
+
+    if len(context.args) < 2:
+        await update.message.reply_text("Uso: /like2k <UID> <QUANTIDADE>")
+        return
+    uid = context.args[0]
+    try:
+        amount = int(context.args[1])
+    except ValueError:
+        await update.message.reply_text("\u274c Quantidade invalida. Manda so numeros.")
+        return
+
+    if not eh_dono(user_id):
+        restante = dados_user.get("limite", 0) - dados_user.get("usado", 0)
+        if amount > restante:
+            await update.message.reply_text(f"\u274c Voce so tem {restante} likes2k disponiveis no seu saldo.")
+            return
+
+    await update.message.reply_text("\u23f3 Enviando likes2k...")
+    resultado = enviar_like2k(uid, amount)
+
+    if resultado.get("sucesso"):
+        if not eh_dono(user_id):
+            usos = load_usos()
+            usos.setdefault("like2k_usuarios", {})
+            usos["like2k_usuarios"].setdefault(str(user_id), {"limite": 0, "usado": 0})
+            usos["like2k_usuarios"][str(user_id)]["usado"] += amount
+            save_usos(usos)
+        msg = (
+            f"\u2705 *PEDIDO LIKE2K CRIADO*\n\n"
+            f"\U0001F464 Jogador: {resultado['nickname']}\n"
+            f"\U0001F194 UID: {resultado['uid']}\n"
+            f"\U0001F30D Regiao: {resultado['regiao']}\n"
+            f"\U0001F4C8 Likes antes: {resultado['likes_antes']}\n"
+            f"\U0001F4E6 Quantidade pedida: {resultado['requested_amount']}\n"
+            f"\U0001F680 Enviados agora: {resultado['sent_amount']}\n"
+            f"\u23f3 Restante na fila: {resultado['remaining_amount']}\n"
+            f"\U0001F4CB Status: {resultado['status']}\n\n"
+            f"\U0001F531 Dono: \u271dREBELDE\u271dVENDAS"
+        )
+        await update.message.reply_text(msg, parse_mode="Markdown")
+        return
+
+    erro = resultado.get("erro", "desconhecido")
+    mensagens_erro_like2k = {
+        "id_nao_encontrado": "\u274c Esse ID de jogador nao existe.",
+        "chave_invalida": "\U0001F511 Erro de configuracao (API key invalida). Avisa o admin.",
+        "sem_chave": "\U0001F511 Erro de configuracao (API key ausente). Avisa o admin.",
+        "limite_diario": "\u26d4 Limite diario da API atingido. Tenta amanha.",
+        "timeout": "\u23f1\ufe0f O envio demorou demais. Tenta de novo.",
+        "falha": "\u26a0\ufe0f Falha temporaria no envio. Tenta de novo.",
+    }
+    texto = mensagens_erro_like2k.get(erro, f"\u274c Erro: {erro}")
+    await update.message.reply_text(texto)
+
+
+async def addlike2k_command(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("\u274c Apenas o dono pode usar este comando.")
+        return
+    if len(context.args) < 2:
+        await update.message.reply_text("Uso: /addlike2k <ID_TELEGRAM> <QUANTIDADE>")
+        return
+    try:
+        alvo_id = str(int(context.args[0]))
+        quantidade = int(context.args[1])
+    except ValueError:
+        await update.message.reply_text("\u274c ID e quantidade devem ser numeros.")
+        return
+    usos = load_usos()
+    usos.setdefault("like2k_usuarios", {})
+    atual = usos["like2k_usuarios"].get(alvo_id, {"limite": 0, "usado": 0})
+    atual["limite"] = atual.get("limite", 0) + quantidade
+    usos["like2k_usuarios"][alvo_id] = atual
+    save_usos(usos)
+    await update.message.reply_text(
+        f"\u2705 Liberado! ID {alvo_id} agora pode usar ate {atual['limite']} likes2k (usado: {atual['usado']})."
+    )
+
+
+async def removerlike2k_command(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("\u274c Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removerlike2k <ID_TELEGRAM>")
+        return
+    alvo_id = str(context.args[0])
+    usos = load_usos()
+    like2k_usuarios = usos.get("like2k_usuarios", {})
+    if alvo_id in like2k_usuarios:
+        del like2k_usuarios[alvo_id]
+        usos["like2k_usuarios"] = like2k_usuarios
+        save_usos(usos)
+        await update.message.reply_text(f"\u2705 Acesso ao /like2k removido do ID {alvo_id}.")
+    else:
+        await update.message.reply_text("\u274c Esse ID nao tem acesso ao /like2k.")
+
+
+app.add_handler(CommandHandler("like2k", like2k_command))
+app.add_handler(CommandHandler("addlike2k", addlike2k_command))
+app.add_handler(CommandHandler("removerlike2k", removerlike2k_command))
 
 mutados_lista = {}
 
