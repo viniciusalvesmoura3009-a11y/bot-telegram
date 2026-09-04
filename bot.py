@@ -577,6 +577,9 @@ async def mostrar_pagina_menu(update, context, pagina):
                 ("🔍 /checkgrupo", "cmd_checkgrupo"),
                 ("🆔 /idgrupo", "cmd_idgrupo"),
                 ("📋 /listliberados", "cmd_listliberados"),
+                ("💎 /like2k", "cmd_like2k"),
+                ("➕ /addlike2k", "cmd_addlike2k"),
+                ("➖ /removerlike2k", "cmd_removerlike2k"),
             ]
         },
         3: {
@@ -693,6 +696,9 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "cmd_stats": ("📈 /stats", "Mostra estatísticas gerais do bot."),
         "cmd_usosgeral": ("📊 /usosgeral", "Mostra o uso geral de todos os usuários."),
         "cmd_removebio": ("🎬 /removebio", "Remove sua bio/token cadastrado."),
+        "cmd_like2k": ("💎 /like2k", "Envia likes via Like2k (dono ou autorizado).\n\nComo usar:\n/like2k <uid> <quantidade>"),
+        "cmd_addlike2k": ("➕ /addlike2k", "Libera/soma saldo de likes2k pra um usuario.\n\nComo usar:\n/addlike2k <id_telegram> <quantidade>"),
+        "cmd_removerlike2k": ("➖ /removerlike2k", "Remove o acesso de um usuario ao /like2k.\n\nComo usar:\n/removerlike2k <id_telegram>"),
     }
     if data.startswith("menu_"):
         pagina = int(data.split("_")[1])
