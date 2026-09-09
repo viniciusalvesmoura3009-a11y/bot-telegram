@@ -1925,7 +1925,12 @@ async def like_command(update, context):
             f"│ ✅ Likes  Depois: {resultado['likes_depois']}\n\n"
             f"🔱 Dono: ༒REBELDE༒VENDAS"
         )
-        await update.message.reply_text(msg, parse_mode="Markdown")
+        try:
+            await update.message.reply_text(msg, parse_mode="Markdown")
+        except Exception as e:
+            print(f"[LIKE] Erro ao enviar confirmacao com Markdown: {e}")
+            texto_seguro = msg.replace("*", "").replace("_", "").replace("`", "").replace("[", "").replace("]", "")
+            await update.message.reply_text(texto_seguro)
         return
 
     erro = resultado.get("erro", "desconhecido")
