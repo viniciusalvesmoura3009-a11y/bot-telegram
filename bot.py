@@ -101,6 +101,23 @@ def save_auto(d):
     except Exception as e:
         print(f"[SAVE_AUTO] ERRO: {e}")
         return False
+
+def load_auto_site():
+    try:
+        usos = load_usos()
+        return usos.get("auto_data_site", {})
+    except Exception as e:
+        print(f"[LOAD_AUTO_SITE] ERRO: {e}")
+        return {}
+
+def save_auto_site(d):
+    try:
+        usos = load_usos()
+        usos["auto_data_site"] = d
+        return save_usos(usos)
+    except Exception as e:
+        print(f"[SAVE_AUTO_SITE] ERRO: {e}")
+        return False
 uids_auto = load_auto()
 
 PETS = {
@@ -439,6 +456,57 @@ async def autolike_loop(app):
                         save_auto(uids_auto)
             except Exception as e:
                 print(f"[AUTOLIKE LOOP] Erro ao processar UID {uid}: {e}")
+
+        uids_auto_site = load_auto_site()
+        print(f"[AUTOLIKE SITE LOOP] Ciclo iniciado as {datetime.utcnow()} UTC, total UIDs site: {len(uids_auto_site)}")
+        for uid, info in list(uids_auto_site.items()):
+            chat_id = info["chat_id"] if isinstance(info, dict) else info
+            if isinstance(info, dict):
+                if info.get("dias_restantes", 1) <= 0:
+                    uids_auto_site.pop(uid, None)
+                    save_auto_site(uids_auto_site)
+                    if chat_id:
+                        try:
+                            await app.bot.send_message(chat_id=chat_id, text=f"⏰ Auto-like do UID {uid} expirou e foi finalizado!")
+                        except:
+                            pass
+                    continue
+
+            agora_hist_check_site = datetime.utcnow() - timedelta(hours=3)
+            data_hoje_site = agora_hist_check_site.strftime("%d/%m/%Y")
+            if isinstance(info, dict) and info.get("ultimo_envio_data") == data_hoje_site:
+                continue
+
+            try:
+                resultado = enviar_like(uid, region="BR")
+                if resultado.get("sucesso"):
+                    if isinstance(info, dict):
+                        info["dias_restantes"] = info.get("dias_restantes", 1) - 1
+                        agora_hist_site = datetime.utcnow() - timedelta(hours=3)
+                        data_hist_site = agora_hist_site.strftime("%d/%m/%Y")
+                        historico_site = info.get("historico", {})
+                        historico_site[data_hist_site] = historico_site.get(data_hist_site, 0) + resultado["likes_enviados"]
+                        info["historico"] = historico_site
+                        info["ultimo_envio_data"] = data_hist_site
+                        uids_auto_site[uid] = info
+                        save_auto_site(uids_auto_site)
+                    if chat_id:
+                        msg = (
+                            f"✅ AUTO LIKE ENVIADO (SITE)\n\n"
+                            f"| 👤 Jogador: " + str(resultado["nickname"]) + "\n"
+                            f"| 🆔 UID: " + str(resultado["uid"]) + "\n"
+                            f"| 🌍 Região: " + str(resultado["regiao"]) + "\n"
+                            f"| 📈 Likes antes: " + str(resultado["likes_antes"]) + "\n"
+                            f"| 🚀 Enviados agora: " + str(resultado["likes_enviados"]) + "\n"
+                            f"| ✅ Likes Depois: " + str(resultado["likes_depois"]) + "\n\n"
+                            f"༒ Dono: ༒REBELDE༒VENDAS"
+                        )
+                        try:
+                            await app.bot.send_message(chat_id=chat_id, text=msg)
+                        except:
+                            pass
+            except Exception as e:
+                print(f"[AUTOLIKE SITE LOOP] Erro ao processar UID {uid}: {e}")
         agora_utc = datetime.utcnow()
         agora_br = agora_utc - timedelta(hours=3)
         proximo = agora_br.replace(hour=13, minute=1, second=0, microsecond=0)
@@ -1307,6 +1375,24 @@ async def listautolike(update, context):
     await update.message.reply_text(msg)
 
 app.add_handler(CommandHandler("listautolike", listautolike))
+
+async def autolikesite(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("⚠️ Apenas o dono pode usar esse comando.")
+        return
+    uids_auto_site = load_auto_site()
+    if not uids_auto_site:
+        await update.message.reply_text("Nenhum auto-like do site ativo!")
+        return
+    msg = "🌐 AUTO-LIKES DO SITE ATIVOS:\n\n"
+    for uid, info in uids_auto_site.items():
+        if isinstance(info, dict):
+            msg += f"👤 UID: {uid}\n📅 Dias restantes: {info.get('dias_restantes','?')}\n📦 Criado em: {info.get('criado_em','?')}\n\n"
+        else:
+            msg += f"👤 UID: {uid}\n(sem controle de dias)\n\n"
+    await update.message.reply_text(msg)
+
+app.add_handler(CommandHandler("autolikesite", autolikesite))
 
 async def resumoautolike(update, context):
     if not eh_dono(update.message.from_user.id):
