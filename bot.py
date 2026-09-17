@@ -2556,14 +2556,29 @@ async def traje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 timeout=30
             )
             data = resp.json()
+            try:
+                resp_info = requests.get(f"{PASSE_BASE_URL}/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=15)
+                data_info = resp_info.json()
+            except Exception:
+                data_info = {}
+            nick_comprovante = data_info.get("nickname", "?")
+            level_comprovante = data_info.get("level", "?")
+            data_comprovante = (datetime.utcnow() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
             if data.get("success"):
                 msg = (
-                    f"✅ Traje enviado!\n"
-                    f"━━━━━━━━━━━━\n"
-                    f"👤 UID: {player_id}\n"
-                    f"👕 Modelo: {data.get('modelo_nome') or nome_traje(modelo)}\n"
-                    f"💵 Valor: R${preco_traje(modelo)},00\n"
-                    f"💰 Saldo atual: R${data.get('saldo_atual', '?')}"
+                    f"╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n"
+                    f"│  ✅️ TRAJE ENVIADO COM SUCESSO  !\n"
+                    f"╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n"
+                    f"━━━━━━━━━━━━━━━\n"
+                    f"📦 Produto: Traje !\n"
+                    f"✅️ {data.get('modelo_nome') or nome_traje(modelo)}\n"
+                    f"👤 Jogador: {nick_comprovante}\n"
+                    f"🆔 UID: {player_id}\n"
+                    f"⭐ Nível: {level_comprovante}\n"
+                    f"📅 Data: {data_comprovante}\n"
+                    f"━━━━━━━━━━━━━━━\n"
+                    f"🏅 OBRIGADO PELA COMPRA!\n"
+                    f"༒REBELDE༒ VENDAS"
                 )
             else:
                 msg = f"❌ {data.get('message', 'Erro ao enviar traje.')}"
@@ -2627,17 +2642,32 @@ async def emote_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 timeout=30
             )
             data = resp.json()
+            try:
+                resp_info = requests.get(f"{PASSE_BASE_URL}/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=15)
+                data_info = resp_info.json()
+            except Exception:
+                data_info = {}
+            nick_comprovante = data_info.get("nickname", "?")
+            level_comprovante = data_info.get("level", "?")
+            data_comprovante = (datetime.utcnow() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
             if resp.status_code == 207:
                 await query.edit_message_text("⚠️ Resultado incerto — NÃO reenvie. Confira manualmente antes de tentar de novo.")
                 return
             if data.get("success"):
                 msg = (
-                    f"✅ Emote enviado!\n"
-                    f"━━━━━━━━━━━━\n"
-                    f"👤 UID: {player_id}\n"
-                    f"🎭 Emote: {data.get('emote_nome', slug)}\n"
-                    f"💵 Valor: R${venda}\n"
-                    f"💰 Saldo atual: R${data.get('saldo_atual', '?')}"
+                    f"╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n"
+                    f"│  ✅️ EMOTE ENVIADO COM SUCESSO  !\n"
+                    f"╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n"
+                    f"━━━━━━━━━━━━━━━\n"
+                    f"📦 Produto: Emote !\n"
+                    f"✅️ {data.get('emote_nome', slug)}\n"
+                    f"👤 Jogador: {nick_comprovante}\n"
+                    f"🆔 UID: {player_id}\n"
+                    f"⭐ Nível: {level_comprovante}\n"
+                    f"📅 Data: {data_comprovante}\n"
+                    f"━━━━━━━━━━━━━━━\n"
+                    f"🏅 OBRIGADO PELA COMPRA!\n"
+                    f"༒REBELDE༒ VENDAS"
                 )
             else:
                 msg = f"❌ {data.get('message', 'Erro ao enviar emote.')}"
