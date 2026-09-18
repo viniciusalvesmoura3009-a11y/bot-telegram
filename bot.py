@@ -1163,6 +1163,44 @@ def save_vips(vips):
     except Exception as e:
         print(f"[SAVE_VIPS ERRO] {type(e).__name__}: {e}", flush=True)
 
+
+def load_manutencao():
+    try:
+        r = requests.get(JSONBIN_URL + "/latest", headers=JSONBIN_HEADERS)
+        return r.json().get("record", {}).get("manutencao", {})
+    except Exception as e:
+        print(f"[LOAD_MANUTENCAO ERRO] {type(e).__name__}: {e}", flush=True)
+        return {}
+
+def save_manutencao(manutencao):
+    try:
+        r = requests.get(JSONBIN_URL + "/latest", headers=JSONBIN_HEADERS)
+        data = r.json().get("record", {})
+        data["manutencao"] = manutencao
+        pr = requests.put(JSONBIN_URL, headers=JSONBIN_HEADERS, json=data)
+        print(f"[SAVE_MANUTENCAO] status={pr.status_code} resp={pr.text[:200]}", flush=True)
+    except Exception as e:
+        print(f"[SAVE_MANUTENCAO ERRO] {type(e).__name__}: {e}", flush=True)
+
+async def manutencao(update, context):
+    if not eh_dono(update.message.from_user.id):
+        return
+    if len(context.args) < 2:
+        await update.message.reply_text("Uso: /manutencao <index|passe> <on|off>")
+        return
+    site = context.args[0].lower()
+    estado = context.args[1].lower()
+    if site not in ("index", "passe"):
+        await update.message.reply_text("Site invalido. Use: index ou passe")
+        return
+    if estado not in ("on", "off"):
+        await update.message.reply_text("Estado invalido. Use: on ou off")
+        return
+    m = load_manutencao()
+    m[site] = estado
+    save_manutencao(m)
+    await update.message.reply_text(f"OK: manutencao do site \'{site}\' = \'{estado}\'")
+
 async def addvip(update, context):
     if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
@@ -2768,4 +2806,5 @@ async def webhookinfo_cmd(update, context):
 
 app.add_handler(CommandHandler("webhookinfo", webhookinfo_cmd))
 
+app.add_handler(CommandHandler("manutencao", manutencao))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
