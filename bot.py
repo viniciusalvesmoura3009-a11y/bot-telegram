@@ -248,6 +248,7 @@ async def usosgeral(update, context):
     total = total_likes_hoje()
     await update.message.reply_text(f"📊 Likes usados hoje: {total}")
 
+async def bio(update, context):
     if not eh_dono(update.message.from_user.id) and update.message.from_user.id not in USUARIOS_BIO:
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
         return
@@ -1232,6 +1233,7 @@ app.add_handler(CommandHandler("removevip", removevip))
 app.add_handler(CommandHandler("listvip", listvip))
 app.add_handler(CommandHandler("meususos", meususos))
 app.add_handler(CommandHandler("usosgeral", usosgeral))
+app.add_handler(CommandHandler("bio", bio))
 def checar_vip(uid):
     vips = load_vips()
     uid = str(uid)
