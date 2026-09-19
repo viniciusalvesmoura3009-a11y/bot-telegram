@@ -478,6 +478,10 @@ async def autolike_loop(app):
             if isinstance(info, dict) and info.get("ultimo_envio_data") == data_hoje_site:
                 continue
 
+            agora_br_check = datetime.utcnow() - timedelta(hours=3)
+            if agora_br_check.hour < 13 or (agora_br_check.hour == 13 and agora_br_check.minute < 1):
+                continue
+
             try:
                 resultado = enviar_like(uid, region="BR")
                 if resultado.get("sucesso"):
