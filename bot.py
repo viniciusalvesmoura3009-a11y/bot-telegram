@@ -1199,7 +1199,8 @@ async def manutencao(update, context):
     m = load_manutencao()
     m[site] = estado
     save_manutencao(m)
-    await update.message.reply_text(f"OK: manutencao do site \'{site}\' = \'{estado}\'")
+    emoji_estado = "✔️" if estado == "on" else "🚫"
+    await update.message.reply_text(f"✅️ OK: manutencao do 🌐 site \'{site}\' = \'{estado}\' {emoji_estado}")
 
 async def addvip(update, context):
     if not eh_dono(update.message.from_user.id):
