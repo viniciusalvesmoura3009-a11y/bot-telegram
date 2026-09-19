@@ -1444,7 +1444,8 @@ async def resumoautolike(update, context):
         return
     uid = context.args[0]
     uids_auto = load_auto()
-    info = uids_auto.get(uid)
+    uids_auto_site = load_auto_site()
+    info = uids_auto.get(uid) or uids_auto_site.get(uid)
     if not info or not isinstance(info, dict):
         await update.message.reply_text("❌ UID não encontrado ou sem histórico.")
         return
