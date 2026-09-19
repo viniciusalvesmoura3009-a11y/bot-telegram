@@ -413,12 +413,25 @@ async def autolike_loop(app):
     global uids_auto
     while True:
         uids_auto = load_auto()
+        agora_limpeza = datetime.utcnow()
+        for uid_lx in list(uids_auto.keys()):
+            info_lx = uids_auto[uid_lx]
+            if isinstance(info_lx, dict) and info_lx.get("expirado") and info_lx.get("expirado_em"):
+                try:
+                    exp_dt = datetime.fromisoformat(info_lx["expirado_em"])
+                    if (agora_limpeza - exp_dt).total_seconds() >= 86400:
+                        uids_auto.pop(uid_lx, None)
+                except Exception:
+                    pass
+        save_auto(uids_auto)
         print(f"[AUTOLIKE LOOP] Ciclo iniciado as {datetime.utcnow()} UTC, total UIDs: {len(uids_auto)}")
         for uid, info in list(uids_auto.items()):
             chat_id = info["chat_id"] if isinstance(info, dict) else info
             if isinstance(info, dict):
-                if info.get("dias_restantes", 1) <= 0:
-                    uids_auto.pop(uid, None)
+                if info.get("dias_restantes", 1) <= 0 and not info.get("expirado"):
+                    info["expirado"] = True
+                    info["expirado_em"] = datetime.utcnow().isoformat()
+                    uids_auto[uid] = info
                     save_auto(uids_auto)
                     try:
                         await app.bot.send_message(chat_id=chat_id, text=f"⏰ Auto-like do UID {uid} expirou e foi finalizado!")
@@ -459,6 +472,17 @@ async def autolike_loop(app):
                 print(f"[AUTOLIKE LOOP] Erro ao processar UID {uid}: {e}")
 
         uids_auto_site = load_auto_site()
+        agora_limpeza_site = datetime.utcnow()
+        for uid_lx in list(uids_auto_site.keys()):
+            info_lx = uids_auto_site[uid_lx]
+            if isinstance(info_lx, dict) and info_lx.get("expirado") and info_lx.get("expirado_em"):
+                try:
+                    exp_dt = datetime.fromisoformat(info_lx["expirado_em"])
+                    if (agora_limpeza_site - exp_dt).total_seconds() >= 86400:
+                        uids_auto_site.pop(uid_lx, None)
+                except Exception:
+                    pass
+        save_auto_site(uids_auto_site)
         print(f"[AUTOLIKE SITE LOOP] Ciclo iniciado as {datetime.utcnow()} UTC, total UIDs site: {len(uids_auto_site)}")
         for uid, info in list(uids_auto_site.items()):
             chat_id = info["chat_id"] if isinstance(info, dict) else info
@@ -1458,7 +1482,10 @@ async def resumoautolike(update, context):
         await update.message.reply_text("Nenhum registro de likes ainda para esse UID.")
         return
     dias_semana = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
-    msg = f"📊 RESUMO AUTO-LIKE\n🆔 UID: {uid}\n\n"
+    aviso_exp = ""
+    if info.get("expirado"):
+        aviso_exp = "\n⚠️ Plano expirado (historico some em 24h)\n"
+    msg = f"📊 RESUMO AUTO-LIKE\n🆔 UID: {uid}{aviso_exp}\n"
     for data_str in sorted(historico.keys(), key=lambda d: datetime.strptime(d, "%d/%m/%Y")):
         data_obj = datetime.strptime(data_str, "%d/%m/%Y")
         dia_semana = dias_semana[data_obj.weekday()]
