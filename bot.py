@@ -1190,7 +1190,7 @@ async def manutencao(update, context):
         return
     site = context.args[0].lower()
     estado = context.args[1].lower()
-    if site not in ("index", "passe"):
+    if site not in ("like", "passe"):
         await update.message.reply_text("Site invalido. Use: index ou passe")
         return
     if estado not in ("on", "off"):
