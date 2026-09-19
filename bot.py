@@ -457,7 +457,10 @@ async def autolike_loop(app):
                         f"| ✅ Likes Depois: " + str(resultado["likes_depois"]) + "\n\n"
                         f"🔱 Dono: ༔REBELDE༔VENDAS"
                     )
-                    await app.bot.send_message(chat_id=chat_id, text=msg)
+                    try:
+                        await app.bot.send_message(chat_id=chat_id, text=msg)
+                    except Exception as e_msg:
+                        print(f"[AUTOLIKE LOOP] Falha ao notificar UID {uid} (like ja registrado): {e_msg}")
                     if isinstance(info, dict):
                         info["dias_restantes"] = info.get("dias_restantes", 1) - 1
                         agora_hist = datetime.utcnow() - timedelta(hours=3)
