@@ -1380,7 +1380,23 @@ async def token(update, context):
     )
     await update.message.reply_text(texto, parse_mode="Markdown", disable_web_page_preview=True)
 
+async def sitepasse(update, context):
+    texto = (
+        "🌐 *SITE DE PASSE*\n\n"
+        "https://site-rebelde-ff.vercel.app/passe.html"
+    )
+    await update.message.reply_text(texto, parse_mode="Markdown", disable_web_page_preview=True)
+
+async def sitelike(update, context):
+    texto = (
+        "🌐 *SITE DE LIKE*\n\n"
+        "https://rebelde-ff.vercel.app"
+    )
+    await update.message.reply_text(texto, parse_mode="Markdown", disable_web_page_preview=True)
+
 app.add_handler(CommandHandler("token", token))
+app.add_handler(CommandHandler("sitepasse", sitepasse))
+app.add_handler(CommandHandler("sitelike", sitelike))
 
 IA_COOLDOWN = {}
 
