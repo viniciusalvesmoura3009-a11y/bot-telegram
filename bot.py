@@ -1656,6 +1656,11 @@ async def passe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("Uso: /passe <uid> <mensagem opcional>\n\nExemplo: /passe 123456789 Aproveite o passe!")
         return
+    if uid != str(DONO_ID):
+        limite = PASSE_USUARIOS.get(uid)
+        if limite is not None and limite <= 0:
+            await update.message.reply_text("❌ Você não tem mais envios de passe disponíveis. Fale com o dono.")
+            return
     player_id = context.args[0]
     MENSAGEM_PASSE_PADRAO = "𝗢𝗕𝗥𝗜𝗚𝗔𝗗𝗢 𝗣𝗘𝗟𝗔 𝗖𝗢𝗠𝗣𝗥𝗔!\n\n༒ REBELDE  ༒ VENDAS ༒  AGRADECE  PELA COMPRA E SUA CONFIANÇA\n\nAproveite o ( passe booyha ) ✌︎㋡"
     mensagem_passe = " ".join(context.args[1:])[:120] if len(context.args) > 1 else MENSAGEM_PASSE_PADRAO
@@ -1734,6 +1739,12 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"🏅 OBRIGADO PELA COMPRA!\n"
                     f"༒REBELDE༒ VENDAS"
                 )
+                uid_solicitante = str(query.from_user.id)
+                if uid_solicitante != str(DONO_ID):
+                    limite = PASSE_USUARIOS.get(uid_solicitante)
+                    if limite is not None:
+                        PASSE_USUARIOS[uid_solicitante] = limite - 1
+                        save_passe_usuarios(PASSE_USUARIOS)
                 await query.edit_message_text(msg)
             else:
                 await query.edit_message_text(f"❌ {data.get('message', 'Erro ao enviar passe.')}")
