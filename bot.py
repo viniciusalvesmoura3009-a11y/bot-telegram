@@ -1939,11 +1939,14 @@ app.add_handler(CommandHandler("listagenda", listagenda))
 
 def load_passe_usuarios():
     usos = load_usos()
-    return set(usos.get("passe_usuarios", []))
+    dados = usos.get("passe_usuarios", {})
+    if isinstance(dados, list):
+        dados = {str(u): None for u in dados}
+    return {str(k): v for k, v in dados.items()}
 
 def save_passe_usuarios(usuarios):
     usos = load_usos()
-    usos["passe_usuarios"] = list(usuarios)
+    usos["passe_usuarios"] = usuarios
     save_usos(usos)
 
 PASSE_USUARIOS = load_passe_usuarios()
@@ -1958,9 +1961,19 @@ async def addpasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /addpasse <id_telegram>")
         return
     alvo = context.args[0]
-    PASSE_USUARIOS.add(alvo)
-    save_passe_usuarios(PASSE_USUARIOS)
-    await update.message.reply_text(f"✅ Usuário {alvo} autorizado a usar /passe.")
+    if len(context.args) > 1:
+        try:
+            quantidade = int(context.args[1])
+        except ValueError:
+            await update.message.reply_text("❌ Quantidade inválida, use um número.")
+            return
+        PASSE_USUARIOS[alvo] = quantidade
+        save_passe_usuarios(PASSE_USUARIOS)
+        await update.message.reply_text(f"✅ Usuário {alvo} autorizado a usar /passe com limite de {quantidade} envio(s).")
+    else:
+        PASSE_USUARIOS[alvo] = None
+        save_passe_usuarios(PASSE_USUARIOS)
+        await update.message.reply_text(f"✅ Usuário {alvo} autorizado a usar /passe (ilimitado).")
 
 async def removepasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.message.from_user.id)
@@ -1971,7 +1984,7 @@ async def removepasse(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /removepasse <id_telegram>")
         return
     alvo = context.args[0]
-    PASSE_USUARIOS.discard(alvo)
+    PASSE_USUARIOS.pop(alvo, None)
     save_passe_usuarios(PASSE_USUARIOS)
     await update.message.reply_text(f"✅ Usuário {alvo} removido do acesso ao /passe.")
 
