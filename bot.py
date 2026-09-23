@@ -1992,6 +1992,72 @@ app.add_handler(CommandHandler("addpasse", addpasse))
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("removepasse", removepasse))
 
+def load_vip_site():
+    usos = load_usos()
+    return usos.get("vip_site_usuarios", {})
+
+def save_vip_site(dados):
+    usos = load_usos()
+    usos["vip_site_usuarios"] = dados
+    save_usos(usos)
+
+async def vipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /vipsite <id_telegram>")
+        return
+    alvo = context.args[0]
+    dados = load_vip_site()
+    existente = dados.get(alvo, {})
+    dados[alvo] = {
+        "autorizado": True,
+        "senha_hash": existente.get("senha_hash"),
+        "nome": existente.get("nome"),
+        "cadastrado": existente.get("cadastrado", False),
+    }
+    save_vip_site(dados)
+    await update.message.reply_text(f"✅ ID {alvo} autorizado a criar conta VIP no site.")
+
+async def removervipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removervipsite <id_telegram>")
+        return
+    alvo = context.args[0]
+    dados = load_vip_site()
+    if alvo in dados:
+        dados[alvo]["autorizado"] = False
+        save_vip_site(dados)
+        await update.message.reply_text(f"✅ Acesso VIP do ID {alvo} revogado.")
+    else:
+        await update.message.reply_text(f"❌ ID {alvo} não encontrado.")
+
+async def listvipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    dados = load_vip_site()
+    if not dados:
+        await update.message.reply_text("Nenhum ID VIP cadastrado ainda.")
+        return
+    linhas = ["VIPs do site:"]
+    for id_tg, info in dados.items():
+        status = "✅ autorizado" if info.get("autorizado") else "❌ revogado"
+        cad = "cadastrado" if info.get("cadastrado") else "aguardando cadastro"
+        linhas.append(f"ID: {id_tg} | {status} | {cad}")
+    await update.message.reply_text("\n".join(linhas))
+
+app.add_handler(CommandHandler("vipsite", vipsite))
+app.add_handler(CommandHandler("removervipsite", removervipsite))
+app.add_handler(CommandHandler("listvipsite", listvipsite))
+
 FREEFIRE_API_KEY = "vl_33b37278a62449f959435a41a2370df6d324dda27c4409bd"
 
 def enviar_like(uid, region="BR"):
