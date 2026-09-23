@@ -2010,16 +2010,18 @@ async def vipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /vipsite <id_telegram>")
         return
     alvo = context.args[0]
+    nome = " ".join(context.args[1:]) if len(context.args) > 1 else None
     dados = load_vip_site()
     existente = dados.get(alvo, {})
     dados[alvo] = {
         "autorizado": True,
         "senha_hash": existente.get("senha_hash"),
-        "nome": existente.get("nome"),
+        "nome": nome if nome else existente.get("nome"),
         "cadastrado": existente.get("cadastrado", False),
     }
     save_vip_site(dados)
-    await update.message.reply_text(f"✅ ID {alvo} autorizado a criar conta VIP no site.")
+    nome_msg = f" ({nome})" if nome else ""
+    await update.message.reply_text(f"✅ ID {alvo}{nome_msg} autorizado a criar conta VIP no site.")
 
 async def removervipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.message.from_user.id)
@@ -2051,7 +2053,8 @@ async def listvipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for id_tg, info in dados.items():
         status = "✅ autorizado" if info.get("autorizado") else "❌ revogado"
         cad = "cadastrado" if info.get("cadastrado") else "aguardando cadastro"
-        linhas.append(f"ID: {id_tg} | {status} | {cad}")
+        nome_txt = f" | {info.get('nome')}" if info.get('nome') else ""
+        linhas.append(f"ID: {id_tg} | {status} | {cad}{nome_txt}")
     await update.message.reply_text("\n".join(linhas))
 
 app.add_handler(CommandHandler("vipsite", vipsite))
