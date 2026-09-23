@@ -2061,6 +2061,45 @@ app.add_handler(CommandHandler("vipsite", vipsite))
 app.add_handler(CommandHandler("removervipsite", removervipsite))
 app.add_handler(CommandHandler("listvipsite", listvipsite))
 
+def load_precos_vip():
+    usos = load_usos()
+    return usos.get("precos_vip", {})
+
+def save_precos_vip(dados):
+    usos = load_usos()
+    usos["precos_vip"] = dados
+    save_usos(usos)
+
+async def valorpassesite(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("\u274c Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        precos = load_precos_vip()
+        atual = precos.get("passe")
+        if atual is not None:
+            await update.message.reply_text(f"Valor VIP atual do Passe: R$ {atual:.2f}".replace(".", ","))
+        else:
+            await update.message.reply_text("Nenhum valor VIP definido para o Passe ainda.\n\nUso: /valorpassesite <valor>\nEx: /valorpassesite 4.20")
+        return
+    valor_str = context.args[0].replace(",", ".")
+    try:
+        valor = float(valor_str)
+    except ValueError:
+        await update.message.reply_text("\u274c Valor invalido. Use numeros, ex: /valorpassesite 4.20")
+        return
+    if valor <= 0:
+        await update.message.reply_text("\u274c O valor precisa ser maior que zero.")
+        return
+    precos = load_precos_vip()
+    precos["passe"] = round(valor, 2)
+    save_precos_vip(precos)
+    valor_fmt = f"{valor:.2f}".replace(".", ",")
+    await update.message.reply_text(f"\u2705 Valor VIP do Passe atualizado para R$ {valor_fmt}")
+
+app.add_handler(CommandHandler("valorpassesite", valorpassesite))
+
 FREEFIRE_API_KEY = "vl_33b37278a62449f959435a41a2370df6d324dda27c4409bd"
 
 def enviar_like(uid, region="BR"):
