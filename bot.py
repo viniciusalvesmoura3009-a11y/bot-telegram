@@ -446,6 +446,7 @@ async def autolike_loop(app):
 
             try:
                 resultado = enviar_like(uid, region="BR")
+                print(f"[AUTOLIKE DEBUG] UID {uid} -> {resultado}")
                 if resultado.get("sucesso"):
                     msg = (
                         f"✅ AUTO LIKE ENVIADO\n\n"
