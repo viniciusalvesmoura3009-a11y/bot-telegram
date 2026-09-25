@@ -2062,6 +2062,56 @@ app.add_handler(CommandHandler("vipsite", vipsite))
 app.add_handler(CommandHandler("removervipsite", removervipsite))
 app.add_handler(CommandHandler("listvipsite", listvipsite))
 
+async def liberarvip(update, context):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /liberarvip <id_telegram> [dias]")
+        return
+    alvo_id = context.args[0]
+    dias = 30
+    if len(context.args) > 1:
+        try:
+            dias = int(context.args[1])
+        except ValueError:
+            await update.message.reply_text("❌ Dias inválido, use um número.")
+            return
+    dados = load_vip_site()
+    existente = dados.get(alvo_id, {})
+    expira_em = (datetime.utcnow() + timedelta(days=dias)).isoformat()
+    dados[alvo_id] = {
+        "autorizado": True,
+        "senha_hash": existente.get("senha_hash"),
+        "nome": existente.get("nome"),
+        "cadastrado": existente.get("cadastrado", False),
+        "expira_em": expira_em,
+    }
+    save_vip_site(dados)
+    data_fmt = expira_em[:10]
+    await update.message.reply_text(f"✅ ID {alvo_id} liberado como VIP por {dias} dia(s). Expira em {data_fmt}.")
+
+async def offvip(update, context):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /offvip <id_telegram>")
+        return
+    alvo_id = context.args[0]
+    dados = load_vip_site()
+    if alvo_id in dados:
+        dados[alvo_id]["autorizado"] = False
+        save_vip_site(dados)
+        await update.message.reply_text(f"✅ Acesso VIP do ID {alvo_id} desativado.")
+    else:
+        await update.message.reply_text(f"❌ ID {alvo_id} não encontrado.")
+
+app.add_handler(CommandHandler("liberarvip", liberarvip))
+app.add_handler(CommandHandler("offvip", offvip))
+
 def load_precos_vip():
     usos = load_usos()
     return usos.get("precos_vip", {})
