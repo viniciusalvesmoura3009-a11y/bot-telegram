@@ -2015,6 +2015,7 @@ async def vipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
     dados = load_vip_site()
     existente = dados.get(alvo, {})
     dados[alvo] = {
+        **existente,
         "autorizado": True,
         "senha_hash": existente.get("senha_hash"),
         "nome": nome if nome else existente.get("nome"),
@@ -2023,6 +2024,41 @@ async def vipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_vip_site(dados)
     nome_msg = f" ({nome})" if nome else ""
     await update.message.reply_text(f"✅ ID {alvo}{nome_msg} autorizado a criar conta VIP no site.")
+
+async def addmensalidade(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.message.from_user.id)
+    if uid != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /addmensalidade <id_telegram> [dias]")
+        return
+    alvo = context.args[0]
+    try:
+        dias = int(context.args[1]) if len(context.args) > 1 else 30
+    except ValueError:
+        await update.message.reply_text("Uso: /addmensalidade <id_telegram> [dias]")
+        return
+    dados = load_vip_site()
+    if alvo not in dados:
+        await update.message.reply_text(f"❌ ID {alvo} nao esta na lista VIP do site. Use /vipsite primeiro.")
+        return
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+    agora = _dt.now(_tz.utc)
+    base = agora
+    atual = dados[alvo].get("mensalidade_ate")
+    if atual:
+        try:
+            dt_atual = _dt.fromisoformat(str(atual).replace("Z", "+00:00"))
+            if dt_atual > agora:
+                base = dt_atual
+        except Exception:
+            pass
+    novo = base + _td(days=dias)
+    dados[alvo]["mensalidade_ate"] = novo.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    save_vip_site(dados)
+    venc = (novo - _td(hours=3)).strftime("%d/%m/%Y %H:%M")
+    await update.message.reply_text(f"✅ Mensalidade do ID {alvo} liberada por {dias} dias.\nVence em: {venc} (Brasilia)")
 
 async def removervipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = str(update.message.from_user.id)
@@ -2061,6 +2097,7 @@ async def listvipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app.add_handler(CommandHandler("vipsite", vipsite))
 app.add_handler(CommandHandler("removervipsite", removervipsite))
 app.add_handler(CommandHandler("listvipsite", listvipsite))
+app.add_handler(CommandHandler("addmensalidade", addmensalidade))
 
 async def liberarvip(update, context):
     uid = str(update.message.from_user.id)
