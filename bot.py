@@ -1893,7 +1893,7 @@ async def agendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         "uid": player_id,
                         "nick": nick,
                         "nivel": nivel,
-                        "data": _dt.now().strftime("%Y-%m-%d %H:%M"),
+                        "data": (_dt.now() - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M"),
                     })
                     save_usos(_usos_ag)
                 except Exception:
@@ -1915,7 +1915,7 @@ async def listagenda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from datetime import datetime as _dt3
     usos_ag = load_usos()
     todos = usos_ag.get("agendamentos_passe", [])
-    mes_atual = _dt3.now().strftime("%Y-%m")
+    mes_atual = (_dt3.now() - timedelta(hours=3)).strftime("%Y-%m")
     do_mes = [a for a in todos if a.get("data", "").startswith(mes_atual)]
     if not do_mes:
         await update.message.reply_text("\U0001F4C5 Nenhum agendamento neste m\u00eas ainda.")
