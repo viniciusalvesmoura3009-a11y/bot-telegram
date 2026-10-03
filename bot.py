@@ -409,6 +409,39 @@ async def stop_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text("\U0001F4F1 AUTOLIKE REMOVIDO\n\n\U0001F194 UID: " + str(uid) + "\n\U0001F6AB Auto like desativado.")
 
+async def grupos_expirados_loop(app):
+    while True:
+        try:
+            grupos = load_grupos_autorizados()
+            agora = datetime.utcnow() - timedelta(hours=3)
+            mudou = False
+            for gid, info in list(grupos.items()):
+                if str(gid) == str(GRUPO_PRINCIPAL):
+                    continue
+                exp = info.get("expira_em") if isinstance(info, dict) else None
+                if not exp:
+                    continue
+                try:
+                    data_exp = datetime.strptime(exp, "%d/%m/%Y")
+                except Exception:
+                    continue
+                if agora > data_exp:
+                    grupos.pop(gid, None)
+                    mudou = True
+                    try:
+                        await app.bot.send_message(int(gid), "⏰ A autorização deste grupo expirou.")
+                    except Exception:
+                        pass
+                    try:
+                        await app.bot.leave_chat(int(gid))
+                    except Exception as e:
+                        print(f"[GRUPOS LOOP] Erro ao sair do grupo {gid}: {e}")
+            if mudou:
+                save_grupos_autorizados(grupos)
+        except Exception as e:
+            print(f"[GRUPOS LOOP] Erro: {e}")
+        await asyncio.sleep(3600)
+
 async def autolike_loop(app):
     global uids_auto
     while True:
@@ -1114,6 +1147,7 @@ app.add_handler(MessageHandler(filters.ALL, filtro_grupo_global), group=-1)
 
 async def post_init(application):
     asyncio.create_task(autolike_loop(application))
+    asyncio.create_task(grupos_expirados_loop(application))
 
 app.post_init = post_init
 
