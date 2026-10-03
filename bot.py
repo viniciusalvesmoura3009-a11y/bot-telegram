@@ -439,6 +439,9 @@ async def autolike_loop(app):
                         pass
                     continue
 
+            if isinstance(info, dict) and info.get("expirado"):
+                continue
+
             agora_hist_check = datetime.utcnow() - timedelta(hours=3)
             data_hoje = agora_hist_check.strftime("%d/%m/%Y")
             if isinstance(info, dict) and info.get("ultimo_envio_data") == data_hoje:
