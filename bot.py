@@ -1082,7 +1082,18 @@ async def checkgrupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             nome = chat.title or "Sem nome"
         except Exception:
             nome = "Desconhecido"
-        linhas.append(f"{nome}: {gid}")
+        _inf = grupos_atuais.get(gid) or {}
+        _exp = _inf.get("expira_em") if isinstance(_inf, dict) else None
+        _lim = _inf.get("limite_diario") if isinstance(_inf, dict) else None
+        if _exp:
+            try:
+                _d = (datetime.strptime(_exp, "%d/%m/%Y") - (datetime.utcnow() - timedelta(hours=3))).days
+                _val = f"{_exp} ({_d} dias)" if _d >= 0 else f"{_exp} (EXPIRADO)"
+            except Exception:
+                _val = str(_exp)
+        else:
+            _val = "sem data (nunca expira)"
+        linhas.append(f"{nome}: {gid}\n   ⏰ Validade: {_val}\n   🔢 Limite/dia: {_lim}")
     msg = "📋 Grupos usando o bot:\n\n" + "\n".join(linhas)
     await update.message.reply_text(msg)
 
