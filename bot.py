@@ -26,6 +26,23 @@ FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
 PASSE_API_TOKEN = os.getenv("PASSE_API_TOKEN")
+PASSE_API_SENHA = os.environ.get("PASSE_API_SENHA", "")
+import requests as _rq
+_orig_request = _rq.sessions.Session.request
+def _soyxa_request(self, method, url, **kw):
+    if "passe.soyxapasse.com.br" in str(url):
+        h = dict(kw.get("headers") or {})
+        h["Authorization"] = f"{PASSE_API_TOKEN}:{PASSE_API_SENHA}"
+        kw["headers"] = h
+        pr = kw.get("params")
+        if isinstance(pr, dict) and "token" in pr:
+            kw["params"] = {k: v for k, v in pr.items() if k != "token"}
+        js = kw.get("json")
+        if isinstance(js, dict) and "token" in js:
+            kw["json"] = {k: v for k, v in js.items() if k != "token"}
+    return _orig_request(self, method, url, **kw)
+_rq.sessions.Session.request = _soyxa_request
+
 LIKE2K_API_KEY = os.getenv("LIKE2K_API_KEY")
 
 def post_com_retry(url, headers=None, json=None, timeout=30, tentativas=3, espera=2):
