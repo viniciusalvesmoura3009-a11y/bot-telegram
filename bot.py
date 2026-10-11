@@ -512,12 +512,12 @@ async def _autolike_loop_inner(app):
                 if resultado.get("sucesso"):
                     msg = (
                         f"✅ AUTO LIKE ENVIADO\n\n"
-                        f"| 👤 Jogador: " + str(resultado["nickname"]) + "\n"
-                        f"| 🆔 UID: " + str(resultado["uid"]) + "\n"
-                        f"| 🌎 Região: " + str(resultado["regiao"]) + "\n"
-                        f"| 📈 Likes antes: " + str(resultado["likes_antes"]) + "\n"
-                        f"| 🚀 Enviados agora: " + str(resultado["likes_enviados"]) + "\n"
-                        f"| ✅ Likes Depois: " + str(resultado["likes_depois"]) + "\n\n"
+                        f"| 👤 Jogador: " + str(resultado.get("nickname", "?")) + "\n"
+                        f"| 🆔 UID: " + str(resultado.get("uid", "?")) + "\n"
+                        f"| 🌎 Região: " + str(resultado.get("regiao", "?")) + "\n"
+                        f"| 📈 Likes antes: " + str(resultado.get("likes_antes", "?")) + "\n"
+                        f"| 🚀 Enviados agora: " + str(resultado.get("likes_enviados", 0)) + "\n"
+                        f"| ✅ Likes Depois: " + str(resultado.get("likes_depois", "?")) + "\n\n"
                         f"🔱 Dono: ༔REBELDE༔VENDAS"
                     )
                     try:
@@ -529,7 +529,7 @@ async def _autolike_loop_inner(app):
                         agora_hist = datetime.utcnow() - timedelta(hours=3)
                         data_hist = agora_hist.strftime("%d/%m/%Y")
                         historico = info.get("historico", {})
-                        historico[data_hist] = historico.get(data_hist, 0) + resultado["likes_enviados"]
+                        historico[data_hist] = historico.get(data_hist, 0) + resultado.get("likes_enviados", 0)
                         info["historico"] = historico
                         info["ultimo_envio_data"] = data_hist
                         uids_auto[uid] = info
@@ -580,7 +580,7 @@ async def _autolike_loop_inner(app):
                         agora_hist_site = datetime.utcnow() - timedelta(hours=3)
                         data_hist_site = agora_hist_site.strftime("%d/%m/%Y")
                         historico_site = info.get("historico", {})
-                        historico_site[data_hist_site] = historico_site.get(data_hist_site, 0) + resultado["likes_enviados"]
+                        historico_site[data_hist_site] = historico_site.get(data_hist_site, 0) + resultado.get("likes_enviados", 0)
                         info["historico"] = historico_site
                         info["ultimo_envio_data"] = data_hist_site
                         uids_auto_site[uid] = info
@@ -588,12 +588,12 @@ async def _autolike_loop_inner(app):
                     if chat_id:
                         msg = (
                             f"✅ AUTO LIKE ENVIADO (SITE)\n\n"
-                            f"| 👤 Jogador: " + str(resultado["nickname"]) + "\n"
-                            f"| 🆔 UID: " + str(resultado["uid"]) + "\n"
-                            f"| 🌍 Região: " + str(resultado["regiao"]) + "\n"
-                            f"| 📈 Likes antes: " + str(resultado["likes_antes"]) + "\n"
-                            f"| 🚀 Enviados agora: " + str(resultado["likes_enviados"]) + "\n"
-                            f"| ✅ Likes Depois: " + str(resultado["likes_depois"]) + "\n\n"
+                            f"| 👤 Jogador: " + str(resultado.get("nickname", "?")) + "\n"
+                            f"| 🆔 UID: " + str(resultado.get("uid", "?")) + "\n"
+                            f"| 🌍 Região: " + str(resultado.get("regiao", "?")) + "\n"
+                            f"| 📈 Likes antes: " + str(resultado.get("likes_antes", "?")) + "\n"
+                            f"| 🚀 Enviados agora: " + str(resultado.get("likes_enviados", 0)) + "\n"
+                            f"| ✅ Likes Depois: " + str(resultado.get("likes_depois", "?")) + "\n\n"
                             f"༒ Dono: ༒REBELDE༒VENDAS"
                         )
                         try:
