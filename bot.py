@@ -2738,7 +2738,7 @@ async def saldo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 chave, valor = par.split("=", 1)
                 dados[chave] = valor
         if not dados:
-            await update.message.reply_text("❌ API: " + texto[:200])
+            await update.message.reply_text("❌ API: " + texto[:200] + f"\n[token {len(PASSE_API_TOKEN or chr(0))-1} chars, senha {len(PASSE_API_SENHA)} chars]")
             return
         evento = "🔥 ATIVO (preços promocionais)" if dados.get("evento") == "1" else "Não"
         msg = (
