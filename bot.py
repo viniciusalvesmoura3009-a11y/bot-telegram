@@ -460,6 +460,15 @@ async def grupos_expirados_loop(app):
         await asyncio.sleep(3600)
 
 async def autolike_loop(app):
+    import traceback
+    while True:
+        try:
+            await _autolike_loop_inner(app)
+        except Exception:
+            print("[AUTOLIKE LOOP] CRASH, reiniciando em 60s:\n" + traceback.format_exc())
+            await asyncio.sleep(60)
+
+async def _autolike_loop_inner(app):
     global uids_auto
     while True:
         uids_auto = load_auto()
