@@ -2238,7 +2238,7 @@ def enviar_like(uid, region="BR"):
     url = "https://Like200.soyxapasse.com.br/api/v1/enviar"
     params = {"key": FREEFIRE_API_KEY, "uid": uid, "region": region}
     try:
-        response = requests.get(url, params=params, timeout=15)
+        response = requests.get(url, params=params, timeout=60)
         return response.json()
     except Exception as e:
         return {"erro": str(e)}
