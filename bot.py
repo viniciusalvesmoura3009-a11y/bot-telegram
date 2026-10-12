@@ -2701,6 +2701,25 @@ app.add_handler(CommandHandler("stopauto", stop_autolike))
 app.add_handler(CommandHandler("addautolike", addautolike))
 app.add_handler(CommandHandler("removeautolike", removeautolike))
 
+async def chatautolike(update, context):
+    global uids_auto
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    dados = load_auto()
+    chat_id = update.effective_chat.id
+    n = 0
+    for uid, info in dados.items():
+        if isinstance(info, dict) and not info.get("expirado"):
+            info["chat_id"] = chat_id
+            n += 1
+    save_auto(dados)
+    uids_auto = dados
+    await update.message.reply_text(f"✅ {n} autolikes agora mandam o comprovante para este chat.")
+
+app.add_handler(CommandHandler("chatautolike", chatautolike))
+
+
 import uuid
 PASSE_BASE_URL = "https://passe.soyxapasse.com.br"
 TRAJES_VALIDOS = ["branco", "preto", "diabinha", "anjinha", "astronauta", "spacefarer", "velho_rabujento"]
