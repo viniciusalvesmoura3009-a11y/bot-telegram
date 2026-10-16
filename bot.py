@@ -2847,7 +2847,11 @@ async def personagem_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
                 json={"token": PASSE_API_TOKEN, "player_id": player_id},
                 timeout=360
             )
-            data = resp.json()
+            try:
+                data = resp.json()
+            except ValueError:
+                await query.edit_message_text(f"⚠️ Resposta inválida da Soyxa (HTTP {resp.status_code}). O pedido PODE ter sido processado. NÃO reenvie: confira o extrato da Soyxa antes de tentar de novo.")  # _resp_invalida
+                return
             if resp.status_code == 207 and data.get("incerto"):
                 await query.edit_message_text("⚠️ Resultado incerto — NÃO reenvie. Verifique manualmente antes de tentar de novo.")
                 return
