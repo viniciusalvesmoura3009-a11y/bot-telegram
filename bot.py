@@ -2171,6 +2171,84 @@ async def listvipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app.add_handler(CommandHandler("vipsite", vipsite))
 app.add_handler(CommandHandler("removervipsite", removervipsite))
 app.add_handler(CommandHandler("listvipsite", listvipsite))
+
+
+def _vip_revogados(dados):
+    return [k for k, v in dados.items() if isinstance(v, dict) and not v.get("autorizado")]
+
+def _vip_nome(info):
+    return str(info.get("nome") or info.get("name") or "sem nome")
+
+async def excluirvipsite(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /excluirvipsite <id_telegram>\n\nExclui de vez a conta VIP do site de quem ja esta revogado. Se ainda estiver ativo, revogue antes com /removervipsite.")
+        return
+    alvo = str(context.args[0]).strip()
+    dados = load_vip_site()
+    info = dados.get(alvo)
+    if not isinstance(info, dict):
+        await update.message.reply_text(f"❌ ID {alvo} nao esta na lista VIP do site.")
+        return
+    if info.get("autorizado"):
+        await update.message.reply_text(f"❌ O ID {alvo} ainda esta autorizado. Revogue antes com /removervipsite {alvo}.")
+        return
+    from telegram import InlineKeyboardButton as _B, InlineKeyboardMarkup as _M
+    kb = _M([[_B("🗑 Excluir de vez", callback_data=f"exclvip_ok_{alvo}"), _B("❌ Cancelar", callback_data="exclvip_no")]])
+    await update.message.reply_text(f"🗑 Excluir a conta VIP do site?\n\nID: {alvo}\nNome: {_vip_nome(info)}\n\nApaga login e senha de vez. Nao da pra desfazer.", reply_markup=kb)
+
+async def limparvipsite(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    dados = load_vip_site()
+    rev = _vip_revogados(dados)
+    if not rev:
+        await update.message.reply_text("✅ Nenhum VIP revogado pra excluir.")
+        return
+    linhas = [f"• {k} — {_vip_nome(dados[k])}" for k in rev[:30]]
+    mais = f"\n... e mais {len(rev) - 30}" if len(rev) > 30 else ""
+    from telegram import InlineKeyboardButton as _B, InlineKeyboardMarkup as _M
+    kb = _M([[_B(f"🗑 Excluir {len(rev)} de vez", callback_data="exclvip_all"), _B("❌ Cancelar", callback_data="exclvip_no")]])
+    await update.message.reply_text("🗑 Estas contas VIP revogadas serao excluidas de vez:\n\n" + "\n".join(linhas) + mais + "\n\nNao da pra desfazer.", reply_markup=kb)
+
+async def exclvip_callback(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not eh_dono(query.from_user.id):
+        return
+    d = query.data or ""
+    if d == "exclvip_no":
+        await query.edit_message_text("❌ Cancelado.")
+        return
+    dados = load_vip_site()
+    if d == "exclvip_all":
+        rev = _vip_revogados(dados)
+        for k in rev:
+            dados.pop(k, None)
+        save_vip_site(dados)
+        await query.edit_message_text(f"✅ {len(rev)} conta(s) VIP revogada(s) excluida(s) de vez.")
+        return
+    if d.startswith("exclvip_ok_"):
+        alvo = d[len("exclvip_ok_"):]
+        info = dados.get(alvo)
+        if not isinstance(info, dict):
+            await query.edit_message_text(f"ℹ️ O ID {alvo} ja nao esta na lista.")
+            return
+        if info.get("autorizado"):
+            await query.edit_message_text(f"❌ O ID {alvo} foi autorizado de novo. Nada foi excluido.")
+            return
+        dados.pop(alvo, None)
+        save_vip_site(dados)
+        await query.edit_message_text(f"✅ Conta VIP {alvo} excluida de vez.")
+
+app.add_handler(CommandHandler("excluirvipsite", excluirvipsite))
+app.add_handler(CommandHandler("limparvipsite", limparvipsite))
+from telegram.ext import CallbackQueryHandler as _CQH
+app.add_handler(_CQH(exclvip_callback, pattern="^exclvip_"))
+
 app.add_handler(CommandHandler("addmensalidade", addmensalidade))
 
 
