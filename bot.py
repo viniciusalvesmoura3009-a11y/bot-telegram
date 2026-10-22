@@ -361,28 +361,33 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📊 INFORMAÇÕES DO JOGADOR\n\n"
         "👤 Nick: " + str(basic.get("nickname", "?")) + "\n"
         "🆔 ID: " + str(basic.get("accountId", uid)) + "\n"
-        "📈 Level: " + str(basic.get("level", "?")) + "\n"
-        "⭐ XP: " + str(basic.get("exp", "?")) + "\n"
+        "📈 Level: " + str(basic.get("level", "?")) + " (Prime " + str(basic.get("primeLevel", "?")) + ")\n"
+        "⭐ XP: " + str(basic.get("exp", "?")) + " (" + str((basic.get("xpInfo") or {}).get("rate", "?")) + "% p/ próximo nível)\n"
         "👍 Curtidas: " + str(basic.get("liked", "?")) + "\n"
         "🌍 Região: " + str(basic.get("region", "?")) + "\n"
         "🎮 Versão do jogo: " + str(basic.get("releaseVersion", "?")) + "\n\n"
         "🏆 Rank BR: " + str(basic.get("rank", "?")) + " (" + str(basic.get("rankingPoints", "?")) + " pts)\n"
         "🎖 Rank CS: " + str(basic.get("csRank", "?")) + " (" + str(basic.get("csRankingPoints", "?")) + " pts)\n"
+        "🥇 Maior rank: BR " + str(basic.get("maxRank", "?")) + " | CS " + str(basic.get("csMaxRank", "?")) + "\n"
         "🏅 Badges: " + str(basic.get("badgeCnt", "?")) + "\n"
         "💎 Passe Elite: " + ("Sim" if basic.get("hasElitePass") else "Não") + "\n"
         "⭐ Credibilidade: " + str(credito.get("creditScore", "?")) + "\n"
-        "🐾 Pet: " + str(pet.get("name", "?")) + "\n"
-        "👕 Roupas equipadas: " + str(len(roupas)) + "\n\n"
+        "🧍 Personagem: " + str((d.get("inventory") or {}).get("characterName", "?")) + "\n"
+        "🐾 Pet: " + str(pet.get("name", "?")) + " (nv " + str(pet.get("level", "?")) + ")\n"
+        "👕 Roupas: " + (", ".join(str(r.get("title", "?")) for r in roupas if isinstance(r, dict)) or "nenhuma") + "\n\n"
         "📅 Criado em: " + str(basic.get("createAt", "?")) + "\n"
         "🕐 Último login: " + str(basic.get("lastLoginAt", "?")) + "\n\n"
         "📝 Bio: " + bio
     )
-    card = (d.get("profileCard") or {}).get("png")
-    if card:
-        try:
-            await update.message.reply_photo(card)
-        except Exception as e:
-            print(f"[INFO] foto falhou: {e}")
+    from telegram import InputMediaPhoto
+    fotos = [u for u in ((d.get("profileCard") or {}).get("png"), (d.get("clothesCard") or {}).get("png")) if u]
+    try:
+        if len(fotos) > 1:
+            await update.message.reply_media_group([InputMediaPhoto(u) for u in fotos])
+        elif fotos:
+            await update.message.reply_photo(fotos[0])
+    except Exception as e:
+        print(f"[INFO] fotos falharam: {e}")
     await update.message.reply_text(msg[:4000])
 
 
