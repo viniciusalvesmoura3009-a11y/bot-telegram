@@ -329,50 +329,62 @@ async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("UID invalido!")
 
 async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    import re as _re
     if not context.args:
         await update.message.reply_text("Uso: /info <uid>")
         return
-    uid = context.args[0]
+    uid = context.args[0].strip()
+    if not uid.isdigit():
+        await update.message.reply_text("❌ UID inválido. Manda só números.")
+        return
     try:
-        resp = requests.get("https://ggxdev.com/api/v1/player-info", params={"uid": uid, "region": "BR", "key": os.environ.get("M4S_API_KEY", "")}, timeout=20)
+        resp = requests.get(
+            "https://freefireapis.lat/GetPlayer",
+            params={"uid": uid, "region": "BR", "formatar": "true", "images": "true", "forceRefresh": "true"},
+            timeout=30,
+        )
         data = resp.json()
     except Exception:
         await update.message.reply_text("API fora do ar!")
         return
-    if data.get("success"):
-        d = data.get("data", {})
-        basic = d.get("basicInfo", {})
-        perfil = d.get("profileInfo", {})
-        social = d.get("socialInfo", {})
-        credito = d.get("creditScoreInfo", {})
-        roupas = perfil.get("clothes", [])
+    d = data.get("result") if isinstance(data, dict) and data.get("success") else None
+    if not d:
+        await update.message.reply_text("UID inválido!")
+        return
+    basic = d.get("basicInfo") or {}
+    social = d.get("socialInfo") or {}
+    credito = d.get("creditScoreInfo") or {}
+    pet = d.get("petInfo") or {}
+    roupas = (d.get("inventory") or {}).get("clothes") or []
+    bio = _re.sub(r"\[[0-9A-Fa-f]{6}\]|\[/?[A-Za-z]\]", "", str(social.get("signature") or "Sem bio")).strip() or "Sem bio"
+    msg = (
+        "📊 INFORMAÇÕES DO JOGADOR\n\n"
+        "👤 Nick: " + str(basic.get("nickname", "?")) + "\n"
+        "🆔 ID: " + str(basic.get("accountId", uid)) + "\n"
+        "📈 Level: " + str(basic.get("level", "?")) + "\n"
+        "⭐ XP: " + str(basic.get("exp", "?")) + "\n"
+        "👍 Curtidas: " + str(basic.get("liked", "?")) + "\n"
+        "🌍 Região: " + str(basic.get("region", "?")) + "\n"
+        "🎮 Versão do jogo: " + str(basic.get("releaseVersion", "?")) + "\n\n"
+        "🏆 Rank BR: " + str(basic.get("rank", "?")) + " (" + str(basic.get("rankingPoints", "?")) + " pts)\n"
+        "🎖 Rank CS: " + str(basic.get("csRank", "?")) + " (" + str(basic.get("csRankingPoints", "?")) + " pts)\n"
+        "🏅 Badges: " + str(basic.get("badgeCnt", "?")) + "\n"
+        "💎 Passe Elite: " + ("Sim" if basic.get("hasElitePass") else "Não") + "\n"
+        "⭐ Credibilidade: " + str(credito.get("creditScore", "?")) + "\n"
+        "🐾 Pet: " + str(pet.get("name", "?")) + "\n"
+        "👕 Roupas equipadas: " + str(len(roupas)) + "\n\n"
+        "📅 Criado em: " + str(basic.get("createAt", "?")) + "\n"
+        "🕐 Último login: " + str(basic.get("lastLoginAt", "?")) + "\n\n"
+        "📝 Bio: " + bio
+    )
+    card = (d.get("profileCard") or {}).get("png")
+    if card:
+        try:
+            await update.message.reply_photo(card)
+        except Exception as e:
+            print(f"[INFO] foto falhou: {e}")
+    await update.message.reply_text(msg[:4000])
 
-        def _fmt_ts(ts):
-            try:
-                return datetime.fromtimestamp(int(ts)).strftime("%d/%m/%Y %H:%M")
-            except Exception:
-                return str(ts) if ts else "?"
-
-        msg = (
-            "\U0001F4CA INFORMA\u00c7\u00d5ES DO JOGADOR\n\n"
-            "\U0001F464 Nick: " + str(basic.get("nickname", "?")) + "\n"
-            "\U0001F194 ID: " + str(basic.get("accountId", uid)) + "\n"
-            "\U0001F4C8 Level: " + str(basic.get("level", "?")) + "\n"
-            "\u2B50 XP: " + str(basic.get("exp", "?")) + "\n"
-            "\U0001F30D Regi\u00e3o: " + str(basic.get("region", "?")) + "\n"
-            "\U0001F3AE Vers\u00e3o do jogo: " + str(basic.get("releaseVersion", "?")) + "\n\n"
-            "🏆 Rank BR: #" + str(basic.get("rank", "?")) + " (" + str(basic.get("rankingPoints", "?")) + " pts)\n"
-            "\U0001F3C6 Rank CS: " + str(basic.get("csRank", "?")) + "\n"
-            "\U0001F396\uFE0F Badge ID: " + str(basic.get("badgeId", "?")) + "\n"
-            "\u2B50 Credibilidade: " + str(credito.get("creditScore", "?")) + "\n\n"
-            "\U0001F455 Total de roupas: " + str(len(roupas)) + "\n\n"
-            "\U0001F4C5 Criado em: " + _fmt_ts(basic.get("createAt")) + "\n"
-            "\U0001F550 \u00daltimo login: " + _fmt_ts(basic.get("lastLoginAt")) + "\n\n"
-            "\U0001F4DC Bio: " + str(social.get("signature", "Sem bio"))
-        )
-        await update.message.reply_text(msg)
-    else:
-        await update.message.reply_text("UID inv\u00e1lido!")
 
 async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not eh_dono(update.message.from_user.id) and update.message.from_user.id not in USUARIOS_AUTO:
