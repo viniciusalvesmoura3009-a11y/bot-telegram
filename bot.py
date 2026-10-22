@@ -2310,7 +2310,7 @@ async def valorpassesite(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app.add_handler(CommandHandler("valorpassesite", valorpassesite))
 
-FREEFIRE_API_KEY = "vl_33b37278a62449f959435a41a2370df6d324dda27c4409bd"
+FREEFIRE_API_KEY = os.getenv("LIKE200_KEY", "")
 
 def enviar_like(uid, region="BR"):
     url = "https://Like200.soyxapasse.com.br/api/v1/enviar"
