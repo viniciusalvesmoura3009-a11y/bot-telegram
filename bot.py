@@ -2318,6 +2318,7 @@ def enviar_like(uid, region="BR"):
     params = {"key": FREEFIRE_API_KEY, "uid": uid, "region": region}
     try:
         response = requests.get(url, params=params, timeout=60)
+        print(f"[LIKE200] uid={uid} status={response.status_code} body={response.text[:600]}")
         return response.json()
     except Exception as e:
         return {"erro": str(e)}
