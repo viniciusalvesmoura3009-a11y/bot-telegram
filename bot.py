@@ -2341,6 +2341,18 @@ def enviar_like(uid, region="BR"):
         return {"erro": str(e)}
 
 
+def _curtidas_perfil(uid, region="BR"):
+    import re as _re
+    try:
+        r = requests.get("https://freefireapis.lat/GetPlayer", params={"uid": uid, "region": region, "formatar": "true", "forceRefresh": "true"}, timeout=25)
+        b = ((r.json() or {}).get("result") or {}).get("basicInfo") or {}
+        n = _re.sub(r"\D", "", str(b.get("liked", "")))
+        return (int(n) if n else None), b.get("nickname")
+    except Exception as e:
+        print(f"[LIKE] leitura de curtidas falhou: {e}")
+        return None, None
+
+
 async def like_command(update, context):
     if not eh_dono(update.message.from_user.id):
         valido, restantes, motivo = checar_vip(str(update.message.from_user.id))
@@ -2362,7 +2374,17 @@ async def like_command(update, context):
             await update.message.reply_text("🚫 Limite diário de IDs deste grupo foi atingido! Tente novamente amanhã.")
             return
     await update.message.reply_text("⏳ Enviando likes...")
+    import asyncio as _aio
+    _antes, _nick = await _aio.to_thread(_curtidas_perfil, uid, region)
     resultado = enviar_like(uid, region)
+    if resultado.get("erro") == "ja_enviado" and _antes is not None:
+        for _t in range(2):
+            await _aio.sleep(8)
+            _depois, _nick2 = await _aio.to_thread(_curtidas_perfil, uid, region)
+            if _depois is not None and _depois > _antes:
+                print(f"[LIKE] ja_enviado da API, mas curtidas subiram {_antes} -> {_depois} (uid {uid})")
+                resultado = {"sucesso": True, "nickname": _nick2 or _nick or uid, "uid": uid, "regiao": region, "likes_antes": _antes, "likes_enviados": _depois - _antes, "likes_depois": _depois}
+                break
 
     if resultado.get("sucesso"):
         contar_uso(update.message.from_user.id)
