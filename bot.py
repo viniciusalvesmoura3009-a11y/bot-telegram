@@ -38,7 +38,7 @@ def _soyxa_request(self, method, url, **kw):
         if isinstance(pr, dict) and "token" in pr:
             kw["params"] = {k: v for k, v in pr.items() if k != "token"}
         js = kw.get("json")
-        if isinstance(js, dict) and "token" in js:
+        if isinstance(js, dict) and "token" in js and "/order" not in str(url):
             kw["json"] = {k: v for k, v in js.items() if k != "token"}
     _r = _orig_request(self, method, url, **kw)
     if "passe.soyxapasse.com.br" in str(url) and "/order" in str(url):
