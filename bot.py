@@ -3056,7 +3056,11 @@ async def traje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 json={"token": PASSE_API_TOKEN, "player_id": player_id, "modelo": modelo},
                 timeout=30
             )
-            data = resp.json()
+            try:
+                data = resp.json()
+            except ValueError:
+                await query.edit_message_text(f"⚠️ Resposta inválida da Soyxa (HTTP {resp.status_code}). O pedido PODE ter sido processado. NÃO reenvie: confira o extrato da Soyxa antes de tentar de novo.")  # _resp_invalida
+                return
             try:
                 resp_info = requests.get(f"{PASSE_BASE_URL}/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=15)
                 data_info = resp_info.json()
@@ -3142,7 +3146,11 @@ async def emote_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 json={"token": PASSE_API_TOKEN, "player_id": player_id, "emote": slug},
                 timeout=30
             )
-            data = resp.json()
+            try:
+                data = resp.json()
+            except ValueError:
+                await query.edit_message_text(f"⚠️ Resposta inválida da Soyxa (HTTP {resp.status_code}). O pedido PODE ter sido processado. NÃO reenvie: confira o extrato da Soyxa antes de tentar de novo.")  # _resp_invalida
+                return
             try:
                 resp_info = requests.get(f"{PASSE_BASE_URL}/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=15)
                 data_info = resp_info.json()
