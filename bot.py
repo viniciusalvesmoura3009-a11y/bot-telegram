@@ -398,10 +398,16 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def historicopasse_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args or not context.args[0].strip().isdigit():
-        await update.message.reply_text("Uso: /historicopasse <uid>")
+    uid_t = str(update.message.from_user.id)
+    if uid_t != str(DONO_ID) and uid_t not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
         return
-    uid = context.args[0].strip()
+    args = [a.strip() for a in (context.args or [])]
+    if not args or not args[0].isdigit():
+        await update.message.reply_text("Uso: /historicopasse <uid> [nomes]")
+        return
+    uid = args[0]
+    com_nomes = len(args) > 1 and args[1].lower() in ("nomes", "nome", "lista")
     try:
         resp = requests.get("https://freefireapis.lat/history-passe", params={"uid": uid, "region": "BR"}, timeout=30)
         data = resp.json()
@@ -412,12 +418,34 @@ async def historicopasse_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not d:
         await update.message.reply_text("UID inválido!")
         return
-    hist = d.get("historyEpInfo") or []
-    elite = [x for x in hist if isinstance(x, dict) and x.get("hasElitePass")]
-    linhas = []
-    for x in elite:
-        nome = x.get("PassNamePtBr") or x.get("PassNameEn") or "?"
-        linhas.append("#" + str(x.get("PassEvent", "?")) + " " + str(nome) + " - nv " + str(x.get("PassLevel", 0)))
+    hist = [x for x in (d.get("historyEpInfo") or []) if isinstance(x, dict)]
+    elite = []
+    for x in hist:
+        if not x.get("hasElitePass"):
+            continue
+        try:
+            ev = int(x.get("PassEvent"))
+        except Exception:
+            continue
+        try:
+            nv = int(x.get("PassLevel") or 0)
+        except Exception:
+            nv = 0
+        elite.append((ev, nv, str(x.get("PassNamePtBr") or x.get("PassNameEn") or "?")))
+    elite.sort()
+
+    def _faixas(nums):
+        nums = sorted(set(nums))
+        out = []
+        a = 0
+        while a < len(nums):
+            b = a
+            while b + 1 < len(nums) and nums[b + 1] == nums[b] + 1:
+                b += 1
+            out.append("#" + str(nums[a]) if a == b else "#" + str(nums[a]) + "-#" + str(nums[b]))
+            a = b + 1
+        return ", ".join(out)
+
     cab = (
         "🎟 HISTÓRICO DE PASSES BOOYAH\n\n"
         "👤 Nick: " + str(d.get("Nickname", "?")) + "\n"
@@ -425,14 +453,28 @@ async def historicopasse_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
         "📈 Level: " + str(d.get("Level", "?")) + " (Prime " + str(d.get("PrimeLevel", "?")) + ")\n"
         "💎 Passes com Elite: " + str(len(elite)) + " de " + str(len(hist)) + "\n"
     )
+    linhas = []
+    if com_nomes:
+        for ev, nv, nome in elite:
+            linhas.append("#" + str(ev) + " " + nome + " - " + ("nv " + str(nv) if nv > 0 else "Elite"))
+    else:
+        por_nivel = {}
+        for ev, nv, nome in elite:
+            por_nivel.setdefault(nv, []).append(ev)
+        for nv in sorted((k for k in por_nivel if k > 0), reverse=True):
+            linhas.append("⭐ nv " + str(nv) + ": " + _faixas(por_nivel[nv]))
+        if 0 in por_nivel:
+            linhas.append("🎫 Elite (nível não informado pela API): " + _faixas(por_nivel[0]))
+        linhas.append("")
+        linhas.append("Use /historicopasse " + uid + " nomes para ver a lista com os nomes.")
     partes = []
-    atual = cab
+    atual = cab + "\n"
     for l in linhas:
         if len(atual) + len(l) + 1 > 3900:
             partes.append(atual)
             atual = l
         else:
-            atual += "\n" + l
+            atual += l + "\n"
     partes.append(atual)
     for parte in partes:
         await update.message.reply_text(parte)
