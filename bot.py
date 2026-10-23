@@ -397,6 +397,47 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg[:4000])
 
 
+async def historicopasse_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args or not context.args[0].strip().isdigit():
+        await update.message.reply_text("Uso: /historicopasse <uid>")
+        return
+    uid = context.args[0].strip()
+    try:
+        resp = requests.get("https://freefireapis.lat/history-passe", params={"uid": uid, "region": "BR"}, timeout=30)
+        data = resp.json()
+    except Exception:
+        await update.message.reply_text("API fora do ar!")
+        return
+    d = data.get("result") if isinstance(data, dict) and data.get("success") else None
+    if not d:
+        await update.message.reply_text("UID inválido!")
+        return
+    hist = d.get("historyEpInfo") or []
+    elite = [x for x in hist if isinstance(x, dict) and x.get("hasElitePass")]
+    linhas = []
+    for x in elite:
+        nome = x.get("PassNamePtBr") or x.get("PassNameEn") or "?"
+        linhas.append("#" + str(x.get("PassEvent", "?")) + " " + str(nome) + " - nv " + str(x.get("PassLevel", 0)))
+    cab = (
+        "🎟 HISTÓRICO DE PASSES BOOYAH\n\n"
+        "👤 Nick: " + str(d.get("Nickname", "?")) + "\n"
+        "🆔 UID: " + str(d.get("UID", uid)) + "\n"
+        "📈 Level: " + str(d.get("Level", "?")) + " (Prime " + str(d.get("PrimeLevel", "?")) + ")\n"
+        "💎 Passes com Elite: " + str(len(elite)) + " de " + str(len(hist)) + "\n"
+    )
+    partes = []
+    atual = cab
+    for l in linhas:
+        if len(atual) + len(l) + 1 > 3900:
+            partes.append(atual)
+            atual = l
+        else:
+            atual += "\n" + l
+    partes.append(atual)
+    for parte in partes:
+        await update.message.reply_text(parte)
+
+
 async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not eh_dono(update.message.from_user.id) and update.message.from_user.id not in USUARIOS_AUTO:
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
@@ -1268,6 +1309,7 @@ async def list_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app.add_handler(CommandHandler("infoopen", info_open))
 app.add_handler(CommandHandler("info", info_player))
+app.add_handler(CommandHandler("historicopasse", historicopasse_cmd))
 
 JSONBIN_KEY = "$2a$10$2zUobgrptNlTik8VoI2BhuWqDxXp/L9WwS1tOLHdSF5Wmo7wss2XS"
 JSONBIN_ID = "6a308646da38895dfec6a1b9"
