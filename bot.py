@@ -2959,6 +2959,7 @@ async def personagem(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def personagem_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    print(f"[CB] personagem_callback data={query.data}")
     if query.data == "personagem_cancel":
         await query.edit_message_text("❌ Cancelado.")
         return
