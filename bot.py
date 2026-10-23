@@ -40,7 +40,13 @@ def _soyxa_request(self, method, url, **kw):
         js = kw.get("json")
         if isinstance(js, dict) and "token" in js:
             kw["json"] = {k: v for k, v in js.items() if k != "token"}
-    return _orig_request(self, method, url, **kw)
+    _r = _orig_request(self, method, url, **kw)
+    if "passe.soyxapasse.com.br" in str(url) and "/order" in str(url):
+        try:
+            print(f"[SOYXA] {method} {str(url).split('soyxapasse.com.br')[-1]} status={_r.status_code} tk={len(PASSE_API_TOKEN or '')} sn={len(PASSE_API_SENHA or '')} body={_r.text[:400]}")
+        except Exception:
+            pass
+    return _r
 _rq.sessions.Session.request = _soyxa_request
 
 LIKE2K_API_KEY = os.getenv("LIKE2K_API_KEY")
