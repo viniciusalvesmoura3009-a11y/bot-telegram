@@ -2052,11 +2052,21 @@ async def agendar_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 jogador = data.get("jogador", {})
                 nick = nick_confirmado
                 nivel = nivel_confirmado
-                agendamento_id = data.get("agendamento_id", "?")
+                _ag_id = None
+                for _src, _keys in ((data, ("agendamento_id", "agendamentoId", "id_agendamento")), (data.get("agendamento"), ("id", "agendamento_id")), (data.get("data"), ("agendamento_id", "agendamentoId", "id_agendamento", "id"))):
+                    if isinstance(_src, dict):
+                        for _k in _keys:
+                            if _src.get(_k) not in (None, ""):
+                                _ag_id = _src.get(_k)
+                                break
+                    if _ag_id is not None:
+                        break
+                agendamento_id = _ag_id if _ag_id is not None else "?"
+                linha_id = ("📅 ID do agendamento: " + str(_ag_id) + "\n") if _ag_id is not None else ""
                 msg = (
                     f"✅ Agendamento realizado com sucesso!\n"
                     f"━━━━━━━━━━━━━━\n"
-                    f"📅 ID do agendamento: {agendamento_id}\n"
+                    f"{linha_id}"
                     f"👤 Jogador: {nick}\n"
                     f"🆔 UID: {player_id}\n"
                     f"⭐ Nível: {nivel}\n"
