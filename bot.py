@@ -334,6 +334,200 @@ async def cadastrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("UID invalido!")
 
+PUSSYBOX_BASE = "https://pussybox.moe"
+_PB_HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+
+def _pb_modo(args):
+    for a in args:
+        if str(a).lower() in ("visualizer", "visual", "pagina", "página", "player"):
+            return "visualizer"
+    return "binary"
+
+
+def _pb_item(body):
+    if not isinstance(body, dict):
+        return None
+    for src in (body, body.get("job") if isinstance(body.get("job"), dict) else None):
+        if not isinstance(src, dict):
+            continue
+        res = src.get("resultado")
+        item = res[0] if isinstance(res, list) and res else (res if isinstance(res, dict) else None)
+        if isinstance(item, dict) and item.get("url"):
+            return item
+    return None
+
+
+def _pb_job_id(body):
+    if not isinstance(body, dict):
+        return None
+    cands = [body]
+    res = body.get("resultado")
+    if isinstance(res, list) and res and isinstance(res[0], dict):
+        cands.append(res[0])
+    if isinstance(body.get("job"), dict):
+        cands.append(body["job"])
+    for c in cands:
+        for k in ("job", "jobId", "job_id", "id"):
+            v = c.get(k)
+            if isinstance(v, (str, int)) and not isinstance(v, bool) and str(v):
+                return str(v)
+    return None
+
+
+def _pb_seguir_job(job_id, limite=600):
+    import time
+    import urllib.parse
+    t0 = time.time()
+    while time.time() - t0 < limite:
+        time.sleep(3)
+        try:
+            r = requests.get(PUSSYBOX_BASE + "/api/upload/jobs/" + urllib.parse.quote(str(job_id)), headers=_PB_HEADERS, timeout=30)
+            body = r.json()
+        except Exception:
+            continue
+        item = _pb_item(body)
+        if item:
+            return item, None
+        if isinstance(body, dict):
+            stt = str(body.get("status") or "").upper()
+            if body.get("success") is False and stt not in ("", "PENDING", "QUEUED", "PROCESSING", "RUNNING"):
+                return None, str(body.get("message") or stt)
+    return None, "o PussyBox demorou demais para terminar"
+
+
+def _pb_url(link, modo):
+    r = requests.post(PUSSYBOX_BASE + "/api/upload/url", json={"url": link, "mode": modo, "quality": "ultra"}, headers=_PB_HEADERS, timeout=120)
+    print("[PB] url status=" + str(r.status_code) + " body=" + r.text[:300])
+    try:
+        body = r.json()
+    except Exception:
+        return None, "resposta inválida do PussyBox (HTTP " + str(r.status_code) + ")"
+    item = _pb_item(body)
+    if item:
+        return item, None
+    job = _pb_job_id(body)
+    if job and isinstance(body, dict) and body.get("success") is not False:
+        return _pb_seguir_job(job)
+    return None, str((body.get("message") if isinstance(body, dict) else None) or ("HTTP " + str(r.status_code)))
+
+
+def _pb_arquivo(path, modo):
+    import os
+    with open(path, "rb") as f:
+        r = requests.post(PUSSYBOX_BASE + "/api/upload/file", data={"mode": modo}, files={"file": (os.path.basename(path), f)}, headers=_PB_HEADERS, timeout=(30, 600))
+    print("[PB] file status=" + str(r.status_code) + " body=" + r.text[:300])
+    try:
+        body = r.json()
+    except Exception:
+        return None, "resposta inválida do PussyBox (HTTP " + str(r.status_code) + ")"
+    item = _pb_item(body)
+    if item:
+        return item, None
+    return None, str((body.get("message") if isinstance(body, dict) else None) or ("HTTP " + str(r.status_code)))
+
+
+def _pb_msg(item, modo):
+    from urllib.parse import urljoin
+    link = urljoin(PUSSYBOX_BASE + "/", str(item.get("url")))
+    nome = str(item.get("name") or "")
+    tipo = "página com player" if modo == "visualizer" else "link direto"
+    return link, "✅ Pronto!\n\n🔗 " + link + "\n" + ("📦 " + nome + "\n" if nome else "") + "🎞 Tipo: " + tipo
+
+
+async def upload_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    import os, mimetypes
+    import re as _re
+    uid_t = str(update.message.from_user.id)
+    if uid_t != str(DONO_ID) and uid_t not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    src = update.message.reply_to_message or update.message
+    obj = None
+    nome = "arquivo"
+    for attr in ("document", "video", "audio", "voice", "animation", "video_note"):
+        o = getattr(src, attr, None)
+        if o is not None:
+            obj = o
+            nome = getattr(o, "file_name", None) or attr
+            break
+    if obj is None and getattr(src, "photo", None):
+        obj = src.photo[-1]
+        nome = "foto.jpg"
+    if obj is None:
+        await update.message.reply_text("Responda a um vídeo, foto ou arquivo com /upload.\nPara página com player: /upload visualizer")
+        return
+    if getattr(obj, "file_size", None) and obj.file_size > 20 * 1024 * 1024:
+        await update.message.reply_text("❌ O Telegram só deixa o bot baixar arquivos de até 20 MB. Suba pelo site ou use /baixar com um link.")
+        return
+    modo = _pb_modo(context.args or [])
+    st = await update.message.reply_text("⏳ Enviando para o PussyBox...")
+
+    async def _tarefa():
+        import asyncio, shutil, tempfile
+        d = tempfile.mkdtemp()
+        try:
+            base, ext = os.path.splitext(nome)
+            if not ext:
+                ext = mimetypes.guess_extension(getattr(obj, "mime_type", None) or "") or ""
+            seguro = (_re.sub(r"[^A-Za-z0-9._-]", "_", base)[:50] or "arquivo") + ext
+            path = os.path.join(d, seguro)
+            tg = await obj.get_file()
+            await tg.download_to_drive(path)
+            item, erro = await asyncio.to_thread(_pb_arquivo, path, modo)
+            if not item:
+                await st.edit_text("❌ O PussyBox recusou: " + str(erro)[:300])
+                return
+            await st.edit_text(_pb_msg(item, modo)[1])
+        except Exception as e:
+            print("[PB] upload falhou: " + str(e))
+            try:
+                await st.edit_text("❌ Falha no upload: " + str(e)[:200])
+            except Exception:
+                pass
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    context.application.create_task(_tarefa())
+
+
+async def baixar_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid_t = str(update.message.from_user.id)
+    if uid_t != str(DONO_ID) and uid_t not in PASSE_USUARIOS:
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    args = context.args or []
+    link = next((a for a in args if a.lower().startswith("http")), None)
+    if not link:
+        await update.message.reply_text("Uso: /baixar <link do TikTok, Instagram, Kwai, YouTube...>\nPara página com player: /baixar <link> visualizer")
+        return
+    modo = _pb_modo(args)
+    st = await update.message.reply_text("⏳ Baixando pelo PussyBox... pode levar alguns minutos.")
+
+    async def _tarefa():
+        import asyncio
+        try:
+            item, erro = await asyncio.to_thread(_pb_url, link, modo)
+            if not item:
+                await st.edit_text("❌ O PussyBox recusou: " + str(erro)[:300])
+                return
+            link_pronto, texto = _pb_msg(item, modo)
+            await st.edit_text(texto)
+            if modo == "binary":
+                try:
+                    await update.message.reply_video(link_pronto)
+                except Exception as e:
+                    print("[PB] reply_video falhou: " + str(e))
+        except Exception as e:
+            print("[PB] baixar falhou: " + str(e))
+            try:
+                await st.edit_text("❌ Falha ao baixar: " + str(e)[:200])
+            except Exception:
+                pass
+
+    context.application.create_task(_tarefa())
+
+
 async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
     import re as _re
     if not context.args:
@@ -1351,6 +1545,8 @@ async def list_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app.add_handler(CommandHandler("infoopen", info_open))
 app.add_handler(CommandHandler("info", info_player))
+app.add_handler(CommandHandler("upload", upload_cmd))
+app.add_handler(CommandHandler("baixar", baixar_cmd))
 app.add_handler(CommandHandler("historicopasse", historicopasse_cmd))
 
 JSONBIN_KEY = "$2a$10$2zUobgrptNlTik8VoI2BhuWqDxXp/L9WwS1tOLHdSF5Wmo7wss2XS"
