@@ -550,7 +550,7 @@ def _ia_liberado(uid_t):
 def _ia_chamar(chave, hist):
     import os
     prompt = os.environ.get("IA_PROMPT") or _IA_PROMPT_PADRAO
-    modelo = os.environ.get("IA_MODELO") or "llama-3.1-8b-instant"
+    modelo = os.environ.get("IA_MODELO") or "openai/gpt-oss-20bopenai/gpt-oss-20b"
     r = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
         headers={"Authorization": "Bearer " + chave, "Content-Type": "application/json"},
