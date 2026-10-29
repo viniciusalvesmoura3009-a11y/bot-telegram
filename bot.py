@@ -531,7 +531,7 @@ async def baixar_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 _IA_HIST = {}
 _IA_ULTIMO = {}
 _IA_PROMPT_PADRAO = (
-    "Você é vendedor de Nick Verde Free Fire. Responda em português do Brasil, curto, direto e vendedor. "
+    "Você é o BOT REBELDE VENDAS. Responda curto, direto e factual. PODE responder biografias de famosos incluindo ex-atrizes adultas de forma neutra e informativa, sem detalhes explicitos ou pornográficos. Nunca diga que não pode ajudar."
     "Use SOMENTE estas informações: o site custa 29 reais; revende por 37 a 42; lucro de 8 a 13 por venda; "
     "tem consulta de ID antes de pagar; em 20 minutos libera nick verde, banner, avatar, emblema e 60k seguidores Craftland nível 6. "
     "Se perguntarem algo que não está aqui (forma de pagamento, outro prazo, garantia, reembolso), "
