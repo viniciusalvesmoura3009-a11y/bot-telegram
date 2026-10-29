@@ -528,6 +528,98 @@ async def baixar_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.application.create_task(_tarefa())
 
 
+_IA_HIST = {}
+_IA_ULTIMO = {}
+_IA_PROMPT_PADRAO = (
+    "Você é vendedor de Nick Verde Free Fire. Responda em português do Brasil, curto, direto e vendedor. "
+    "Use SOMENTE estas informações: o site custa 29 reais; revende por 37 a 42; lucro de 8 a 13 por venda; "
+    "tem consulta de ID antes de pagar; em 20 minutos libera nick verde, banner, avatar, emblema e 60k seguidores Craftland nível 6. "
+    "Se perguntarem algo que não está aqui (forma de pagamento, outro prazo, garantia, reembolso), "
+    "diga que vai chamar o atendente e NÃO invente nada."
+)
+
+
+def _ia_liberado(uid_t):
+    import os
+    if uid_t == str(DONO_ID) or uid_t in PASSE_USUARIOS:
+        return True
+    ids = [x.strip() for x in os.environ.get("IA_USUARIOS", "").replace(";", ",").replace(" ", ",").split(",")]
+    return bool(uid_t) and uid_t in ids
+
+
+def _ia_chamar(chave, hist):
+    import os
+    prompt = os.environ.get("IA_PROMPT") or _IA_PROMPT_PADRAO
+    modelo = os.environ.get("IA_MODELO") or "llama-3.3-70b-versatile"
+    r = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={"Authorization": "Bearer " + chave, "Content-Type": "application/json"},
+        json={"model": modelo, "messages": [{"role": "system", "content": prompt}] + hist, "max_tokens": 400},
+        timeout=40,
+    )
+    print("[IA] status=" + str(r.status_code))
+    try:
+        body = r.json()
+    except Exception:
+        return None, "resposta inválida (HTTP " + str(r.status_code) + ")"
+    try:
+        return body["choices"][0]["message"]["content"], None
+    except Exception:
+        msg = ""
+        if isinstance(body, dict) and isinstance(body.get("error"), dict):
+            msg = str(body["error"].get("message") or "")
+        return None, (msg[:200] or "HTTP " + str(r.status_code))
+
+
+async def ia_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    import os, time, asyncio
+    uid_t = str(update.message.from_user.id)
+    if not _ia_liberado(uid_t):
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    chave = os.environ.get("GROQ_KEY", "").strip()
+    if not chave:
+        await update.message.reply_text("⚠️ IA não configurada (falta a variável GROQ_KEY no Render).")
+        return
+    args = context.args or []
+    if len(args) == 1 and args[0].lower() == "limpar":
+        _IA_HIST.pop(uid_t, None)
+        await update.message.reply_text("🧹 Conversa da IA apagada.")
+        return
+    texto = " ".join(args).strip()
+    if not texto and update.message.reply_to_message and update.message.reply_to_message.text:
+        texto = update.message.reply_to_message.text.strip()
+    if not texto:
+        await update.message.reply_text("Uso: /ia <sua pergunta>\nPara apagar a conversa: /ia limpar")
+        return
+    agora = time.time()
+    if agora - _IA_ULTIMO.get(uid_t, 0) < 5:
+        await update.message.reply_text("⏳ Aguarde alguns segundos.")
+        return
+    _IA_ULTIMO[uid_t] = agora
+    h = _IA_HIST.setdefault(uid_t, [])
+    h.append({"role": "user", "content": texto[:2000]})
+    del h[:-8]
+    while h and h[0]["role"] != "user":
+        h.pop(0)
+    try:
+        await update.message.chat.send_action("typing")
+    except Exception:
+        pass
+    try:
+        resp, erro = await asyncio.to_thread(_ia_chamar, chave, list(h))
+    except Exception as e:
+        print("[IA] falhou: " + str(e))
+        resp, erro = None, "falha de conexão"
+    if not resp:
+        h.pop()
+        await update.message.reply_text("❌ A IA não respondeu: " + str(erro)[:200])
+        return
+    h.append({"role": "assistant", "content": resp})
+    for i in range(0, len(resp), 4000):
+        await update.message.reply_text(resp[i:i + 4000])
+
+
 async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
     import re as _re
     if not context.args:
@@ -1545,6 +1637,7 @@ async def list_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 app.add_handler(CommandHandler("infoopen", info_open))
 app.add_handler(CommandHandler("info", info_player))
+app.add_handler(CommandHandler("ia", ia_cmd))
 app.add_handler(CommandHandler("upload", upload_cmd))
 app.add_handler(CommandHandler("baixar", baixar_cmd))
 app.add_handler(CommandHandler("historicopasse", historicopasse_cmd))
