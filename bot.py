@@ -550,7 +550,7 @@ def _ia_liberado(uid_t):
 def _ia_chamar(chave, hist):
     import os
     prompt = os.environ.get("IA_PROMPT") or _IA_PROMPT_PADRAO
-    modelo = os.environ.get("IA_MODELO") or "openai/gpt-oss-20bopenai/gpt-oss-20b"
+    modelo = os.environ.get("IA_MODELO") or "openai/gpt-oss-20b"
     r = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
         headers={"Authorization": "Bearer " + chave, "Content-Type": "application/json"},
@@ -577,7 +577,7 @@ async def ia_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not _ia_liberado(uid_t):
         await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
         return
-    chave = os.environ.get("GROQ_KEY", "").strip()
+    chave = (os.environ.get("GROQ_KEY") or os.environ.get("GROQ_API_KEY") or "").strip()
     if not chave:
         await update.message.reply_text("⚠️ IA não configurada (falta a variável GROQ_KEY no Render).")
         return
