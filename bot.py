@@ -415,7 +415,7 @@ def _pb_url(link, modo):
 def _pb_arquivo(path, modo):
     import os
     with open(path, "rb") as f:
-        r = requests.post(PUSSYBOX_BASE + "/api/upload/file", data={"mode": modo}, files={"file": (os.path.basename(path), f)}, headers=_PB_HEADERS, timeout=(30, 600))
+        r = requests.post(PUSSYBOX_BASE + "/api/upload/file", data={"mode": modo}, files={"file": (os.path.basename(path), f, (__import__("mimetypes").guess_type(path)[0] or "application/octet-stream"))}, headers=_PB_HEADERS, timeout=(30, 600))
     print("[PB] file status=" + str(r.status_code) + " body=" + r.text[:300])
     try:
         body = r.json()
