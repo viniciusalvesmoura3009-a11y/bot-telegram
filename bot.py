@@ -2605,6 +2605,49 @@ async def excluirvipsite(update, context):
     kb = _M([[_B("🗑 Excluir de vez", callback_data=f"exclvip_ok_{alvo}"), _B("❌ Cancelar", callback_data="exclvip_no")]])
     await update.message.reply_text(f"🗑 Excluir a conta VIP do site?\n\nID: {alvo}\nNome: {_vip_nome(info)}\n\nApaga login e senha de vez. Nao da pra desfazer.", reply_markup=kb)
 
+async def libsite(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    dados = load_vip_site()
+    susp = [k for k, v in dados.items() if isinstance(v, dict) and v.get("suspenso")]
+    if not context.args:
+        if not susp:
+            await update.message.reply_text("✅ Nenhuma conta VIP do site está suspensa.\n\nUso: /libsite <id_telegram>")
+            return
+        linhas = ["• " + str(k) + " — " + str(_vip_nome(dados[k])) for k in susp[:40]]
+        mais = "\n... e mais " + str(len(susp) - 40) if len(susp) > 40 else ""
+        await update.message.reply_text("⛔ Contas VIP suspensas (" + str(len(susp)) + "):\n\n" + "\n".join(linhas) + mais + "\n\nPara liberar: /libsite <id_telegram>")
+        return
+    alvo = str(context.args[0]).strip()
+    info = dados.get(alvo)
+    if not isinstance(info, dict):
+        await update.message.reply_text("❌ ID " + alvo + " não está na lista VIP do site.")
+        return
+    if not info.get("suspenso"):
+        await update.message.reply_text("ℹ️ A conta " + alvo + " não está suspensa.")
+        return
+    import time as _t
+    agora = int(_t.time() * 1000)
+    info["suspenso"] = False
+    info.pop("suspenso_em", None)
+    info["sem_estoque_desde"] = agora
+    info["reativado_em"] = agora
+    try:
+        r = save_vip_site(dados)
+    except Exception as e:
+        print("[LIBSITE] erro ao salvar: " + str(e))
+        r = False
+    if r is False:
+        await update.message.reply_text("⚠️ Não consegui salvar. Tente de novo em alguns segundos.")
+        return
+    await update.message.reply_text("✅ Conta liberada: " + alvo + " — " + str(_vip_nome(info)) + "\nEla tem 7 dias para comprar estoque de passes.")
+    try:
+        await context.bot.send_message(chat_id=int(alvo), text="✅ Sua conta VIP do site foi reativada! Você tem 7 dias para comprar estoque de passes e manter a conta ativa.")
+    except Exception:
+        pass
+
+
 async def limparvipsite(update, context):
     if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
@@ -2652,6 +2695,7 @@ async def exclvip_callback(update, context):
 
 app.add_handler(CommandHandler("excluirvipsite", excluirvipsite))
 app.add_handler(CommandHandler("limparvipsite", limparvipsite))
+app.add_handler(CommandHandler("libsite", libsite))
 from telegram.ext import CallbackQueryHandler as _CQH
 app.add_handler(_CQH(exclvip_callback, pattern="^exclvip_"))
 
