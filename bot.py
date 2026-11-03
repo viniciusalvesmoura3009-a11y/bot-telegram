@@ -2692,6 +2692,66 @@ def _varrer_vip_site(aplicar):
     return novos, avisos, iniciados, zerados, vip
 
 
+async def suspendersite(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /suspendersite <id_telegram>\nPara liberar depois: /libsite <id_telegram>")
+        return
+    alvo = str(context.args[0]).strip()
+    dados = load_vip_site()
+    info = dados.get(alvo)
+    if not isinstance(info, dict):
+        await update.message.reply_text("❌ ID " + alvo + " não está na lista VIP do site.")
+        return
+    if info.get("suspenso"):
+        await update.message.reply_text("ℹ️ A conta " + alvo + " já está suspensa.")
+        return
+    import time as _t
+    info["suspenso"] = True
+    info["suspenso_em"] = int(_t.time() * 1000)
+    try:
+        r = save_vip_site(dados)
+    except Exception as e:
+        print("[SUSPENDERSITE] erro ao salvar: " + str(e))
+        r = False
+    if r is False:
+        await update.message.reply_text("⚠️ Não consegui salvar. Tente de novo em alguns segundos.")
+        return
+    await update.message.reply_text("⛔ Conta suspensa: " + alvo + " — " + str(_vip_nome(info)) + "\nPara liberar: /libsite " + alvo)
+
+
+async def varredura_diaria(context):
+    import os, asyncio
+    if str(os.environ.get("VIP_SUSPENSAO", "")).strip().lower() != "on":
+        return
+    try:
+        novos, avisos, iniciados, zerados, vip = await asyncio.to_thread(_varrer_vip_site, True)
+    except Exception as e:
+        print("[VARREDURA] erro: " + str(e))
+        return
+    print("[VARREDURA] suspensos=" + str(len(novos)) + " alerta=" + str(len(avisos)) + " iniciados=" + str(iniciados) + " zerados=" + str(zerados))
+    for k in novos:
+        try:
+            await context.bot.send_message(chat_id=int(k), text="⛔ Sua conta VIP do site foi suspensa: 7 dias sem estoque de passes. Para reativar, pague a taxa de R$ 10,00 com o suporte.")
+        except Exception:
+            pass
+    for k, d in avisos:
+        try:
+            await context.bot.send_message(chat_id=int(k), text="⚠️ Sua conta VIP do site será suspensa em " + str(d) + " dia(s) se continuar sem estoque de passes. Compre estoque para evitar a suspensão.")
+        except Exception:
+            pass
+    if novos or avisos:
+        linhas = ["🔎 Varredura diária VIP do site", "⛔ Suspensos hoje: " + str(len(novos)), "⚠️ Em alerta: " + str(len(avisos))]
+        linhas += ["• " + str(k) + " — " + str(_vip_nome(vip[k])) + " (suspensa)" for k in novos[:20]]
+        linhas += ["• " + str(k) + " — " + str(_vip_nome(vip[k])) + " (" + str(d) + " dia(s))" for k, d in avisos[:20]]
+        try:
+            await context.bot.send_message(chat_id=int(DONO_ID), text="\n".join(linhas)[:4000])
+        except Exception:
+            pass
+
+
 async def varrersite(update, context):
     import os
     if not eh_dono(update.message.from_user.id):
@@ -2771,6 +2831,15 @@ async def exclvip_callback(update, context):
 app.add_handler(CommandHandler("excluirvipsite", excluirvipsite))
 app.add_handler(CommandHandler("limparvipsite", limparvipsite))
 app.add_handler(CommandHandler("varrersite", varrersite))
+app.add_handler(CommandHandler("suspendersite", suspendersite))
+try:
+    import datetime as _dtm
+    if app.job_queue:
+        app.job_queue.run_daily(varredura_diaria, time=_dtm.time(hour=9, minute=5, tzinfo=_dtm.timezone(_dtm.timedelta(hours=-3))), name="varredura_vip_site")
+    else:
+        print("[VARREDURA] job_queue indisponivel; use /varrersite")
+except Exception as e:
+    print("[VARREDURA] nao agendou: " + str(e))
 app.add_handler(CommandHandler("libsite", libsite))
 from telegram.ext import CallbackQueryHandler as _CQH
 app.add_handler(_CQH(exclvip_callback, pattern="^exclvip_"))
