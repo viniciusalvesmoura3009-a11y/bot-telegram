@@ -2648,6 +2648,81 @@ async def libsite(update, context):
         pass
 
 
+def _varrer_vip_site(aplicar):
+    import time
+    usos = load_usos()
+    vip = usos.get("vip_site_usuarios", {}) or {}
+    saldos = usos.get("passe_usuarios", {}) or {}
+    agora = int(time.time() * 1000)
+    DIA = 86400000
+    novos, avisos, iniciados, zerados = [], [], 0, 0
+    for k, info in vip.items():
+        if not isinstance(info, dict) or not info.get("autorizado") or info.get("suspenso"):
+            continue
+        try:
+            sd = float(saldos.get(str(k), 0) or 0)
+        except Exception:
+            sd = 0
+        if sd > 0:
+            if info.get("sem_estoque_desde"):
+                if aplicar:
+                    info.pop("sem_estoque_desde", None)
+                zerados += 1
+            continue
+        desde = info.get("sem_estoque_desde")
+        if not desde:
+            if aplicar:
+                info["sem_estoque_desde"] = agora
+            iniciados += 1
+            continue
+        try:
+            dias = (agora - int(desde)) / DIA
+        except Exception:
+            continue
+        if dias >= 7:
+            if aplicar:
+                info["suspenso"] = True
+                info["suspenso_em"] = agora
+            novos.append(k)
+        elif dias >= 5:
+            avisos.append((k, max(1, 7 - int(dias))))
+    if aplicar and (novos or iniciados or zerados):
+        usos["vip_site_usuarios"] = vip
+        save_usos(usos)
+    return novos, avisos, iniciados, zerados, vip
+
+
+async def varrersite(update, context):
+    import os
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    ligado = str(os.environ.get("VIP_SUSPENSAO", "")).strip().lower() == "on"
+    try:
+        novos, avisos, iniciados, zerados, vip = _varrer_vip_site(ligado)
+    except Exception as e:
+        print("[VARRERSITE] erro: " + str(e))
+        await update.message.reply_text("⚠️ Erro ao varrer: " + str(e)[:150])
+        return
+    modo = "APLICADO" if ligado else "SIMULAÇÃO (VIP_SUSPENSAO não está on, nada foi gravado)"
+    linhas = ["🔎 Varredura VIP do site — " + modo, "",
+              "⛔ Suspensos agora: " + str(len(novos)),
+              "⚠️ Em alerta (5 a 6 dias sem estoque): " + str(len(avisos)),
+              "⏱ Contagem iniciada: " + str(iniciados),
+              "✅ Contagem zerada (compraram estoque): " + str(zerados)]
+    if novos:
+        linhas += ["", "Suspensos:"] + ["• " + str(k) + " — " + str(_vip_nome(vip[k])) for k in novos[:25]]
+    if avisos:
+        linhas += ["", "Em alerta:"] + ["• " + str(k) + " — " + str(_vip_nome(vip[k])) + " (" + str(d) + " dia(s))" for k, d in avisos[:25]]
+    await update.message.reply_text("\n".join(linhas)[:4000])
+    if ligado:
+        for k in novos:
+            try:
+                await context.bot.send_message(chat_id=int(k), text="⛔ Sua conta VIP do site foi suspensa: 7 dias sem estoque de passes. Para reativar, pague a taxa de R$ 10,00 com o suporte.")
+            except Exception:
+                pass
+
+
 async def limparvipsite(update, context):
     if not eh_dono(update.message.from_user.id):
         await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
@@ -2695,6 +2770,7 @@ async def exclvip_callback(update, context):
 
 app.add_handler(CommandHandler("excluirvipsite", excluirvipsite))
 app.add_handler(CommandHandler("limparvipsite", limparvipsite))
+app.add_handler(CommandHandler("varrersite", varrersite))
 app.add_handler(CommandHandler("libsite", libsite))
 from telegram.ext import CallbackQueryHandler as _CQH
 app.add_handler(_CQH(exclvip_callback, pattern="^exclvip_"))
