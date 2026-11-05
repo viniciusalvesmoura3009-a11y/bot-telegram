@@ -3356,6 +3356,33 @@ async def apagar_cmd(update, context):
     except Exception as e:
         pass
 
+
+async def banff(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != DONO_ID:
+        return
+    args = context.args
+    if len(args) < 2:
+        return await update.message.reply_text("Uso: /banff <token> <7d/perm>")
+    target = args[0]
+    duration = args[1].lower()
+    env_key = {"7d": "API_7D_BAN", "perm": "API_URL_BAN"}.get(duration)
+    if not env_key:
+        return await update.message.reply_text("Use 7d ou perm no final.")
+    base_url = os.getenv(env_key)
+    if not base_url:
+        return await update.message.reply_text(f"{env_key} nao configurada no Render.")
+    try:
+        resp = await asyncio.to_thread(requests.get, base_url, params={"query": target, "duration": duration}, timeout=30)
+        data = resp.json()
+        if data.get("success"):
+            r = data["result"]
+            await update.message.reply_text(f"Sucesso!\nNick: {r['nickname']}\nID: {r['accountId']}\nStatus: Suspenso ({duration})")
+        else:
+            await update.message.reply_text(f"Falha: {data.get('message', 'Token invalido')}")
+    except Exception as e:
+        await update.message.reply_text(f"Erro interno: {type(e).__name__}")
+
+app.add_handler(CommandHandler("banff", banff))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("link", link_cmd))
 app.add_handler(CommandHandler("title", title_cmd))
