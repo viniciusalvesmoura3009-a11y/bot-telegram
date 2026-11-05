@@ -67,31 +67,6 @@ def post_com_retry(url, headers=None, json=None, timeout=30, tentativas=3, esper
             time.sleep(espera)
     raise ultimo_erro
 BASE_URL = "https://fluxdevservice.com/api/frifas"
-async def execute_ban(client, message):
-    args = message.text.split()
-    if len(args) < 3: return await message.reply("Uso: /banff <token> <7d/perm>")
-    target = args[1]
-    duration = args[2].lower()
-    if duration == "7d": env_key = "API_7D_BAN"
-    elif duration == "perm": env_key = "API_URL_BAN"
-    else: return await message.reply("❌ Use 7d ou perm no final.")
-    base_url = os.getenv(env_key)
-    if not base_url: return await message.reply(f"❌ Erro: {env_key} não configurada no Render.")
-    url = f"{base_url}?query={target}&duration={duration}"
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                data = await resp.json()
-                if data.get("success"):
-                    await message.reply(f"✅ Sucesso!\nNick: {data['result']['nickname']}\nID: {data['result']['accountId']}\nStatus: Suspenso ({duration})")
-                else:
-                    await message.reply(f"❌ Falha: {data.get('message', 'Token inválido')}")
-    except Exception as e:
-        await message.reply(f"⚠️ Erro interno: {str(e)}")
-
-@bot.on(message(filters.command("banff")))
-async def banff_handler(client, message):
-    await execute_ban(client, message)
 DONO_ID = 7895922394
 
 
@@ -3444,31 +3419,6 @@ app.add_handler(CommandHandler("chatautolike", chatautolike))
 
 import uuid
 PASSE_BASE_URL = "https://passe.soyxapasse.com.br"
-async def execute_ban(client, message):
-    args = message.text.split()
-    if len(args) < 3: return await message.reply("Uso: /banff <token> <7d/perm>")
-    target = args[1]
-    duration = args[2].lower()
-    if duration == "7d": env_key = "API_7D_BAN"
-    elif duration == "perm": env_key = "API_URL_BAN"
-    else: return await message.reply("❌ Use 7d ou perm no final.")
-    base_url = os.getenv(env_key)
-    if not base_url: return await message.reply(f"❌ Erro: {env_key} não configurada no Render.")
-    url = f"{base_url}?query={target}&duration={duration}"
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                data = await resp.json()
-                if data.get("success"):
-                    await message.reply(f"✅ Sucesso!\nNick: {data['result']['nickname']}\nID: {data['result']['accountId']}\nStatus: Suspenso ({duration})")
-                else:
-                    await message.reply(f"❌ Falha: {data.get('message', 'Token inválido')}")
-    except Exception as e:
-        await message.reply(f"⚠️ Erro interno: {str(e)}")
-
-@bot.on(message(filters.command("banff")))
-async def banff_handler(client, message):
-    await execute_ban(client, message)
 TRAJES_VALIDOS = ["branco", "preto", "diabinha", "anjinha", "astronauta", "spacefarer", "velho_rabujento"]
 
 
