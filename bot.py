@@ -3856,8 +3856,6 @@ async def webhookinfo_cmd(update, context):
 app.add_handler(CommandHandler("webhookinfo", webhookinfo_cmd))
 
 app.add_handler(CommandHandler("manutencao", manutencao))
-    app.add_handler(CommandHandler("banff", ban_ff_handler))
-    app.add_handler(CommandHandler("banff", ban_ff_handler))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 
