@@ -3857,42 +3857,7 @@ app.add_handler(CommandHandler("webhookinfo", webhookinfo_cmd))
 
 app.add_handler(CommandHandler("manutencao", manutencao))
     app.add_handler(CommandHandler("banff", ban_ff_handler))
+    app.add_handler(CommandHandler("banff", ban_ff_handler))
 app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES, close_loop=False)
 
 
-async def ban_ff_handler(update, context):
-    try:
-        args = context.args
-        if not args or len(args) < 2:
-            await update.message.reply_text('❌ Uso: /banff token 7d ou /banff token perm')
-            return
-        
-        import os, requests
-        time_val = args[-1].lower()
-        
-        if time_val == '7d':
-            token = args[0]
-            api_7d = os.getenv('API_7D_BAN', 'https://freefireapis.lat/suspension')
-            r = requests.get(f'{api_7d}?query={token}&duration=7d', timeout=20).json()
-            await update.message.reply_text('✅ Resultado 7 Dias: ' + str(r.get('result', 'Erro')))
-            return
-            
-        if time_val == 'perm':
-            api_perm = os.getenv('API_URL_BAN')
-            if not api_perm:
-                await update.message.reply_text('❌ Erro: Variável API_URL_BAN não configurada no Render.')
-                return
-            
-            payload = {'time': 'perm'}
-            if len(args) == 3:
-                payload['uid'], payload['password'] = args[0], args[1]
-            elif len(args) == 2:
-                token = args[0]
-                payload['jwt_token' if token.startswith('ey') else 'access_token'] = token
-            
-            r = requests.post(api_perm, json=payload, timeout=20).json()
-            await update.message.reply_text('✅ Sucesso Permanente!' if r.get('success') else '❌ Erro no Ban Permanente')
-            return
-            
-    except Exception as e:
-        await update.message.reply_text('⚠️ Erro: ' + str(e))
