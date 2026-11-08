@@ -22,6 +22,9 @@ time.sleep(5)
 from telegram import Update, ChatPermissions
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler, ApplicationHandlerStop
 
+async def banff(update, context):
+    await update.message.reply_text('Comando Banff ativo')
+    return
 FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
@@ -3853,6 +3856,7 @@ async def webhookinfo_cmd(update, context):
     r = _req.get(f"https://api.telegram.org/bot{tok}/getWebhookInfo", timeout=20)
     await update.message.reply_text(f"```\n{r.text}\n```", parse_mode="Markdown")
 
+app.add_handler(CommandHandler('banff', banff))
 app.add_handler(CommandHandler("webhookinfo", webhookinfo_cmd))
 
 app.add_handler(CommandHandler("manutencao", manutencao))
