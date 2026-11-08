@@ -26,54 +26,57 @@ FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
 import os
 import requests
 
+import os
+import requests
+
 async def banff(update, context):
-    # 1. Validação de argumentos: Verifica se o usuário mandou os 5 dados necessários
+    # 1. Captura tudo que foi digitado após o /banff
     args = context.args
-    if len(args) < 5:
-        await update.message.reply_text('❌ Erro! Use: /banff TOKEN JWT ID SENHA [perm/7d]')
+    if not args:
+        await update.message.reply_text('❌ Erro! Você precisa enviar ao menos um dado (Token, JWT, ID ou Senha).')
         return
 
-    # 2. Atribuição de variáveis
-    token, jwt, user_id, senha, prazo = args[0], args[1], args[2], args[3], args[4]
+    # 2. Definimos o prazo (o último argumento é sempre o prazo)
+    # Se o último for 'perm' ou '7d', usamos ele. Se não, assumimos 'perm'.
+    prazo = args[-1] if args[-1] in ['perm', '7d'] else 'perm'
+    
+    # Removemos o prazo da lista de argumentos para não confundir com IDs ou Tokens
+    dados_entrada = args[:-1] if args[-1] in ['perm', '7d'] else args
 
-    # 3. Seleção da URL da API com base no prazo (perm ou 7d)
-    if prazo == 'perm':
-        url = os.environ.get('API_URL_BAN')
-    elif prazo == '7d':
-        url = os.environ.get('API_7D_BAN')
-    else:
-        await update.message.reply_text('❌ Prazo inválido! Use perm ou 7d')
-        return
-
-    # 4. Verificação de Segurança: Checa se a URL existe no painel do Render
+    # 3. Seleção da URL da API
+    url = os.environ.get('API_URL_BAN') if prazo == 'perm' else os.environ.get('API_7D_BAN')
+    
     if not url:
         await update.message.reply_text('❌ Erro: URL da API não configurada no Render!')
         return
 
-    await update.message.reply_text('⏳ Enviando requisição para a API... Aguarde.')
+    await update.message.reply_text('⏳ Processando modo de banimento e enviando requisição...')
 
-    # 5. Execução da Requisição (Onde o banimento acontece)
     try:
-        # Monta o pacote de dados para a API
-        payload = {
-            'token': token, 
-            'jwt': jwt, 
-            'id': user_id, 
-            'senha': senha
-        }
+        # 4. MONTAGEM DINÂMICA (A Mágica acontece aqui)
+        # O bot vai tentar adivinhar o que cada dado é baseado no tamanho e formato
+        payload = {}
         
-        # Envia os dados via método POST com tempo limite de 15 segundos
+        for item in dados_entrada:
+            if item.isdigit(): # Se for só número, é o ID (UID)
+                payload['id'] = item
+            elif len(item) > 100: # Se for um código gigante, é o JWT
+                payload['jwt'] = item
+            elif len(item) > 20 and len(item) < 100: # Se for médio, é o Access Token
+                payload['token'] = item
+            else: # Se for curto e não for número, é a Senha
+                payload['senha'] = item
+
+        # 5. Envio para a API (Ela aceitará qualquer combinação que o bot montou)
         response = requests.post(url, data=payload, timeout=15)
 
-        # 6. Tratamento da Resposta do Servidor
         if response.status_code == 200:
-            await update.message.reply_text(f'✅ **Sucesso!**\n\nA conta foi suspensa com sucesso via API.\n⏳ Validade: {prazo}')
+            await update.message.reply_text(f'✅ **Sucesso!**\n\nBanimento processado via modo dinâmico.\n⏳ Validade: {prazo}')
         else:
-            await update.message.reply_text(f'❌ **Erro da API**\n\nO servidor respondeu: {response.status_code}')
+            await update.message.reply_text(f'❌ **Erro da API**\n\nO servidor respondeu: {response.status_code}\nVerifique se os dados enviados são válidos para esse modo de ban.')
 
     except Exception as e:
-        # Trata erros de conexão, timeout ou queda do servidor da API
-        await update.message.reply_text(f'❌ **Erro de Conexão**\n\nErro: {str(e)}')
+        await update.message.reply_text(f'❌ **Erro de Conexão**: {str(e)}')
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
 PASSE_API_TOKEN = os.getenv("PASSE_API_TOKEN")
