@@ -23,27 +23,57 @@ from telegram import Update, ChatPermissions
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler, ApplicationHandlerStop
 
 FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
+import os
+import requests
+
 async def banff(update, context):
+    # 1. Validação de argumentos: Verifica se o usuário mandou os 5 dados necessários
     args = context.args
     if len(args) < 5:
         await update.message.reply_text('❌ Erro! Use: /banff TOKEN JWT ID SENHA [perm/7d]')
         return
 
+    # 2. Atribuição de variáveis
     token, jwt, user_id, senha, prazo = args[0], args[1], args[2], args[3], args[4]
-    validade = 'Permanente' if prazo == 'perm' else '7 Dias' if prazo == '7d' else 'Inválido'
-    
-    if validade == 'Inválido':
+
+    # 3. Seleção da URL da API com base no prazo (perm ou 7d)
+    if prazo == 'perm':
+        url = os.environ.get('API_URL_BAN')
+    elif prazo == '7d':
+        url = os.environ.get('API_7D_BAN')
+    else:
         await update.message.reply_text('❌ Prazo inválido! Use perm ou 7d')
         return
 
-    resposta = (f'✅ **Dados Processados**\n\n' 
-               f'🔑 Token: `{token}`\n' 
-               f'🎫 JWT: `{jwt}`\n' 
-               f'👤 ID: `{user_id}`\n' 
-               f'🔐 Senha: `{senha}`\n' 
-               f'⏳ Validade: {validade}')
-    
-    await update.message.reply_text(resposta, parse_mode='Markdown')
+    # 4. Verificação de Segurança: Checa se a URL existe no painel do Render
+    if not url:
+        await update.message.reply_text('❌ Erro: URL da API não configurada no Render!')
+        return
+
+    await update.message.reply_text('⏳ Enviando requisição para a API... Aguarde.')
+
+    # 5. Execução da Requisição (Onde o banimento acontece)
+    try:
+        # Monta o pacote de dados para a API
+        payload = {
+            'token': token, 
+            'jwt': jwt, 
+            'id': user_id, 
+            'senha': senha
+        }
+        
+        # Envia os dados via método POST com tempo limite de 15 segundos
+        response = requests.post(url, data=payload, timeout=15)
+
+        # 6. Tratamento da Resposta do Servidor
+        if response.status_code == 200:
+            await update.message.reply_text(f'✅ **Sucesso!**\n\nA conta foi suspensa com sucesso via API.\n⏳ Validade: {prazo}')
+        else:
+            await update.message.reply_text(f'❌ **Erro da API**\n\nO servidor respondeu: {response.status_code}')
+
+    except Exception as e:
+        # Trata erros de conexão, timeout ou queda do servidor da API
+        await update.message.reply_text(f'❌ **Erro de Conexão**\n\nErro: {str(e)}')
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
 PASSE_API_TOKEN = os.getenv("PASSE_API_TOKEN")
