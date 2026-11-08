@@ -22,10 +22,28 @@ time.sleep(5)
 from telegram import Update, ChatPermissions
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler, ApplicationHandlerStop
 
-async def banff(update, context):
-    await update.message.reply_text('Comando Banff ativo')
-    return
 FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
+async def banff(update, context):
+    args = context.args
+    if len(args) < 5:
+        await update.message.reply_text('❌ Erro! Use: /banff TOKEN JWT ID SENHA [perm/7d]')
+        return
+
+    token, jwt, user_id, senha, prazo = args[0], args[1], args[2], args[3], args[4]
+    validade = 'Permanente' if prazo == 'perm' else '7 Dias' if prazo == '7d' else 'Inválido'
+    
+    if validade == 'Inválido':
+        await update.message.reply_text('❌ Prazo inválido! Use perm ou 7d')
+        return
+
+    resposta = (f'✅ **Dados Processados**\n\n' 
+               f'🔑 Token: `{token}`\n' 
+               f'🎫 JWT: `{jwt}`\n' 
+               f'👤 ID: `{user_id}`\n' 
+               f'🔐 Senha: `{senha}`\n' 
+               f'⏳ Validade: {validade}')
+    
+    await update.message.reply_text(resposta, parse_mode='Markdown')
 STORCKTEC_TOKEN = os.getenv("STORCKTEC_TOKEN")
 STORCKTEC_SENHA = os.getenv("STORCKTEC_SENHA")
 PASSE_API_TOKEN = os.getenv("PASSE_API_TOKEN")
