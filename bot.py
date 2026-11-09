@@ -1614,6 +1614,8 @@ async def listliberados(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "🔓 IDs com acesso total liberado:\n\n" + "\n".join(str(uid) for uid in liberados)
     await update.message.reply_text(msg)
 
+from upguilda import get_upguilda_handler
+app.add_handler(get_upguilda_handler(DONO_ID))
 app.add_handler(CommandHandler("liberacesso", liberacesso))
 app.add_handler(CommandHandler("removeracesso", removeracesso))
 app.add_handler(CommandHandler("listliberados", listliberados))
