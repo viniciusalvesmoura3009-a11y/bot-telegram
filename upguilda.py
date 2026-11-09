@@ -1,6 +1,10 @@
 import os
 import re
 from urllib.parse import quote
+try:
+    from telegram import CopyTextButton
+except ImportError:
+    CopyTextButton = None
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
@@ -82,7 +86,11 @@ async def up_whats_collect(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Telegram: {tg}"
     )
     link = f"https://wa.me/{ZAP_NUM}?text={quote(texto)}"
-    botao = InlineKeyboardMarkup([[InlineKeyboardButton("📲 Enviar comprovante no WhatsApp", url=link)]])
+    linhas = []
+    if CopyTextButton and pix != "SEU_PIX_AQUI":
+        linhas.append([InlineKeyboardButton("📋 Copiar chave PIX", copy_text=CopyTextButton(text=pix))])
+    linhas.append([InlineKeyboardButton("📲 Enviar comprovante no WhatsApp", url=link)])
+    botao = InlineKeyboardMarkup(linhas)
     await update.message.reply_text(resumo, parse_mode='Markdown', reply_markup=botao)
     return ConversationHandler.END
 
