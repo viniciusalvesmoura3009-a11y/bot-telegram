@@ -9,6 +9,9 @@ _NV = {'padrao': 'Padrão', '10': 'Nível 10+', '20': 'Nível 20+', '30': 'Níve
 _RK = {'padrao': 'Padrão', 'mestre': 'Mestre+', 'gm': 'Grandmaster+'}
 
 async def up_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != 'private':
+        await update.message.reply_text(f"🔒 Por segurança, faça o pedido no privado: https://t.me/{context.bot.username}?start=upguilda")
+        return ConversationHandler.END
     context.user_data.clear()
     keyboard = [[
         InlineKeyboardButton("40k - 50k (R$ 20)", callback_data='p40'),
