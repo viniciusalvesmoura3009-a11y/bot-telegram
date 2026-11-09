@@ -1,5 +1,6 @@
 import os
 import re
+from urllib.parse import quote
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
@@ -69,25 +70,20 @@ async def up_whats_collect(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"• CS Ranqueado: *Padrão*\n\n"
         f"💰 *Valor Total: R$ {valor}*\n\n"
         f"Envie o pagamento via PIX para: `{pix}`\n\n"
-        f"📲 Após pagar, envie o comprovante pelo *WhatsApp*:\n"
-        f"*{ZAP_TXT}*\n"
-        f"https://wa.me/{ZAP_NUM}\n\n"
+        f"📲 Após pagar, toque no botão abaixo pra enviar o comprovante no *WhatsApp* ({ZAP_TXT}).\n\n"
         f"Informe o ID da guilda ({d['up_guilda_id']}) junto com o comprovante."
     )
-    await update.message.reply_text(resumo, parse_mode='Markdown')
-    try:
-        u = update.effective_user
-        aviso = (
-            f"🆕 Novo pedido de UP de Guilda (comprovante vem pelo WhatsApp)\n\n"
-            f"👤 {u.first_name} (@{u.username or 'sem_usuario'})\n"
-            f"🆔 ID Telegram: {u.id}\n"
-            f"📦 Plano: {plano} (R$ {valor})\n"
-            f"🆔 ID Guilda: {d['up_guilda_id']}\n"
-            f"📱 WhatsApp: {num} (wa.me/55{num})"
-        )
-        await context.bot.send_message(chat_id=_DONO["id"], text=aviso)
-    except Exception:
-        pass
+    u = update.effective_user
+    tg = ('@' + u.username) if u.username else str(u.id)
+    texto = (
+        f"Olá Emerson, comprei pontos pra minha guilda usando o UP Guilda do seu bot 🤖✅\n"
+        f"Plano: {plano}\n"
+        f"ID da guilda: {d['up_guilda_id']}\n"
+        f"Telegram: {tg}"
+    )
+    link = f"https://wa.me/{ZAP_NUM}?text={quote(texto)}"
+    botao = InlineKeyboardMarkup([[InlineKeyboardButton("📲 Enviar comprovante no WhatsApp", url=link)]])
+    await update.message.reply_text(resumo, parse_mode='Markdown', reply_markup=botao)
     return ConversationHandler.END
 
 async def up_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
