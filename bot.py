@@ -1921,6 +1921,82 @@ async def sitelike(update, context):
     )
     await update.message.reply_text(texto, parse_mode="Markdown", disable_web_page_preview=True)
 
+async def comandos(update, context):
+    if str(update.effective_user.id) != str(DONO_ID):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    blocos = [
+"""📋 COMANDOS (1/3)
+
+LIKES
+/like - envia likes pro UID
+/like2k - envia pela quota individual (Like2k)
+/addlike2k, /removerlike2k - da ou tira quota do Like2k
+/autolike, /addautolike, /removeautolike - like automatico diario
+/listautolike, /resumoautolike - lista e resume os autolikes
+/stopauto <uid> - para o autolike do UID
+/chatautolike (dono)* - define o chat dos avisos do autolike
+/autolikesite* - autolike do site
+/usohoje, /vendas - uso e vendas do dia
+/meususos - seus usos hoje
+/usosgeral (dono) - usos de todos
+
+PASSE E PRODUTOS SOYXA
+/passe - envia Passe Booyah
+/consultarpasse* - consulta o jogador na Soyxa
+/historicopasse <uid> - passes Booyah com Elite do jogador
+/saldo, /estoque - saldo e estoque da Soyxa
+/personagem, /traje, /emote, /codiguin - envia cada produto
+/addpasse, /removepasse* - libera ou remove quem usa o /passe
+/agendar, /listagenda - agenda envio de passe e lista""",
+"""📋 COMANDOS (2/3)
+
+VIP E ACESSO
+/addvip, /removevip, /listvip - VIP do bot
+/offvip (dono)* - desliga VIP do bot
+/vipsite, /removervipsite, /listvipsite - VIP do site
+/addmensalidade - soma mensalidade VIP (R$ 7,00 por 30 dias)
+/excluirvipsite, /limparvipsite - apaga contas VIP revogadas do site
+/libsite, /suspendersite (dono)* - libera ou suspende conta do site
+/valorpassesite (dono)* - muda o valor do passe no site
+/liberacesso, /removeracesso, /listliberados - acesso total a outro ID
+
+GRUPOS E MODERACAO
+/ban, /unban, /mute, /unmute, /listamute
+/pin, /unpin, /promove, /rebaixa
+/link, /title, /desc, /bio - dados do grupo
+/addgrupo*, /removergrupo*, /abrgrupo*, /fechgrupo*, /checkgrupo*
+/idgrupo - mostra o ID do grupo
+/D* - comando de admin de grupo""",
+"""📋 COMANDOS (3/3)
+
+INFO E UTILIDADES
+/info - perfil do jogador no Free Fire
+/banff* - checa conta Free Fire (pede Token, JWT, ID ou Senha)
+/infoopen (dono)* - nao confirmado
+/ia - IA do bot
+/baixar <link> - baixa video (TikTok, Instagram, Kwai, YouTube)
+/upload - responda a um arquivo e gera link
+/ytmp3*, /ytmp4* - audio e video do YouTube
+/upguilda - pedido de UP de guilda
+/tabela - tabela de precos
+/stats - estatisticas
+/sitepasse, /sitelike - links dos sites
+/token - link da loja de tokens
+
+CONTROLE
+/manutencao - liga ou desliga manutencao dos sites
+/webhookinfo - diagnostico do webhook
+/varrersite (dono)* - varredura nos dados do site
+/menu, /meuid, /cancel
+
+* = descricao provavel, pelo nome""",
+    ]
+    for b in blocos:
+        await update.message.reply_text(b)
+
+app.add_handler(CommandHandler("comandos", comandos))
+
 app.add_handler(CommandHandler("token", token))
 app.add_handler(CommandHandler("sitepasse", sitepasse))
 app.add_handler(CommandHandler("sitelike", sitelike))
