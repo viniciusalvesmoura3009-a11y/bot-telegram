@@ -1,3 +1,4 @@
 *.bak*
 __pycache__/
 *.pyc
+bot_backup_*.py
