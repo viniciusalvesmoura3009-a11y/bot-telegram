@@ -1941,11 +1941,11 @@ LIKES
 /meususos - seus usos hoje
 /usosgeral (dono) - usos de todos
 
-PASSE E PRODUTOS SOYXA
+PASSE E PRODUTOS
 /passe - envia Passe Booyah
-/consultarpasse* - consulta o jogador na Soyxa
+/consultarpasse* - consulta o jogador na API
 /historicopasse <uid> - passes Booyah com Elite do jogador
-/saldo, /estoque - saldo e estoque da Soyxa
+/saldo, /estoque - saldo e estoque da API
 /personagem, /traje, /emote, /codiguin - envia cada produto
 /addpasse, /removepasse* - libera ou remove quem usa o /passe
 /agendar, /listagenda - agenda envio de passe e lista""",
@@ -3681,7 +3681,7 @@ async def personagem_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
             try:
                 data = resp.json()
             except ValueError:
-                await query.edit_message_text(f"⚠️ Resposta inválida da Soyxa (HTTP {resp.status_code}). O pedido PODE ter sido processado. NÃO reenvie: confira o extrato da Soyxa antes de tentar de novo.")  # _resp_invalida
+                await query.edit_message_text(f"⚠️ Resposta inválida da API (HTTP {resp.status_code}). O pedido PODE ter sido processado. NÃO reenvie: confira o extrato da API antes de tentar de novo.")  # _resp_invalida
                 return
             if resp.status_code == 207 and data.get("incerto"):
                 await query.edit_message_text("⚠️ Resultado incerto — NÃO reenvie. Verifique manualmente antes de tentar de novo.")
@@ -3771,7 +3771,7 @@ async def traje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 data = resp.json()
             except ValueError:
-                await query.edit_message_text(f"⚠️ Resposta inválida da Soyxa (HTTP {resp.status_code}). O pedido PODE ter sido processado. NÃO reenvie: confira o extrato da Soyxa antes de tentar de novo.")  # _resp_invalida
+                await query.edit_message_text(f"⚠️ Resposta inválida da API (HTTP {resp.status_code}). O pedido PODE ter sido processado. NÃO reenvie: confira o extrato da API antes de tentar de novo.")  # _resp_invalida
                 return
             try:
                 resp_info = requests.get(f"{PASSE_BASE_URL}/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=15)
@@ -3861,7 +3861,7 @@ async def emote_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 data = resp.json()
             except ValueError:
-                await query.edit_message_text(f"⚠️ Resposta inválida da Soyxa (HTTP {resp.status_code}). O pedido PODE ter sido processado. NÃO reenvie: confira o extrato da Soyxa antes de tentar de novo.")  # _resp_invalida
+                await query.edit_message_text(f"⚠️ Resposta inválida da API (HTTP {resp.status_code}). O pedido PODE ter sido processado. NÃO reenvie: confira o extrato da API antes de tentar de novo.")  # _resp_invalida
                 return
             try:
                 resp_info = requests.get(f"{PASSE_BASE_URL}/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=15)
