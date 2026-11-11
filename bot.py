@@ -2698,13 +2698,36 @@ async def listvipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not dados:
         await update.message.reply_text("Nenhum ID VIP cadastrado ainda.")
         return
+    saldos_vip = load_usos().get("passe_usuarios", {}) or {}
+    import time as _t
+    agora_ms = _t.time() * 1000
     linhas = ["VIPs do site:"]
     for id_tg, info in dados.items():
         status = "✅ autorizado" if info.get("autorizado") else "❌ revogado"
         cad = "cadastrado" if info.get("cadastrado") else "aguardando cadastro"
         nome_txt = f" | {info.get('nome')}" if info.get('nome') else ""
-        linhas.append(f"ID: {id_tg} | {status} | {cad}{nome_txt}")
-    await update.message.reply_text("\n".join(linhas))
+        sd = saldos_vip.get(str(id_tg))
+        est = "ilimitado" if (str(id_tg) in saldos_vip and sd is None) else str(sd if sd is not None else 0)
+        extra = ""
+        try:
+            sem = info.get("sem_estoque_desde")
+            if sem:
+                v = float(sem)
+                if v < 1e12:
+                    v *= 1000
+                extra = f" | sem estoque ha {int((agora_ms - v) // 86400000)}d"
+        except Exception:
+            pass
+        susp = " | SUSPENSA" if info.get("suspenso") else ""
+        linhas.append(f"ID: {id_tg} | {status} | {cad}{nome_txt} | estoque: {est}{extra}{susp}")
+    bloco = ""
+    for _l in linhas:
+        if len(bloco) + len(_l) + 1 > 3500:
+            await update.message.reply_text(bloco)
+            bloco = ""
+        bloco += _l + "\n"
+    if bloco:
+        await update.message.reply_text(bloco)
 
 app.add_handler(CommandHandler("vipsite", vipsite))
 app.add_handler(CommandHandler("removervipsite", removervipsite))
