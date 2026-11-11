@@ -2875,6 +2875,11 @@ async def suspendersite(update, context):
         await update.message.reply_text("⚠️ Não consegui salvar. Tente de novo em alguns segundos.")
         return
     await update.message.reply_text("⛔ Conta suspensa: " + alvo + " — " + str(_vip_nome(info)) + "\nPara liberar: /libsite " + alvo)
+    try:
+        await context.bot.send_message(chat_id=int(alvo), text="⛔ Sua conta VIP do site foi suspensa. Para reativar, pague a taxa de R$ 10,00 com o suporte. Se não for reativada, a conta poderá ser excluída.")
+        await update.message.reply_text("📨 VIP avisado no privado.")
+    except Exception:
+        await update.message.reply_text("⚠️ Não consegui avisar o VIP no privado (ele precisa abrir o bot e apertar Iniciar).")
 
 
 async def varredura_diaria(context):
@@ -2887,20 +2892,23 @@ async def varredura_diaria(context):
         print("[VARREDURA] erro: " + str(e))
         return
     print("[VARREDURA] suspensos=" + str(len(novos)) + " alerta=" + str(len(avisos)) + " iniciados=" + str(iniciados) + " zerados=" + str(zerados))
+    falhas = []
     for k in novos:
         try:
             await context.bot.send_message(chat_id=int(k), text="⛔ Sua conta VIP do site foi suspensa: 7 dias sem estoque de passes. Para reativar, pague a taxa de R$ 10,00 com o suporte.")
         except Exception:
-            pass
+            falhas.append(str(k))
     for k, d in avisos:
         try:
             await context.bot.send_message(chat_id=int(k), text="⚠️ Sua conta VIP do site será suspensa em " + str(d) + " dia(s) se continuar sem estoque de passes. Compre estoque para evitar a suspensão.")
         except Exception:
-            pass
+            falhas.append(str(k))
     if novos or avisos:
         linhas = ["🔎 Varredura diária VIP do site", "⛔ Suspensos hoje: " + str(len(novos)), "⚠️ Em alerta: " + str(len(avisos))]
         linhas += ["• " + str(k) + " — " + str(_vip_nome(vip[k])) + " (suspensa)" for k in novos[:20]]
         linhas += ["• " + str(k) + " — " + str(_vip_nome(vip[k])) + " (" + str(d) + " dia(s))" for k, d in avisos[:20]]
+        if falhas:
+            linhas.append("📵 Não consegui avisar no privado: " + ", ".join(falhas) + " (precisam abrir o bot e apertar Iniciar)")
         try:
             await context.bot.send_message(chat_id=int(DONO_ID), text="\n".join(linhas)[:4000])
         except Exception:
