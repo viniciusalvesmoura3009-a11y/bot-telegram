@@ -1962,6 +1962,7 @@ VIP E ACESSO
 /liberacesso, /removeracesso, /listliberados - acesso total a outro ID
 /addviplike <id> <nome>, /removeviplike, /listviplike - revendedor de likes (site)
 /addmensalidadelike <id> [dias] - soma mensalidade do revendedor de likes
+/resumovip <id>, /resumoviplike <id> - resumo do vendedor (estoque, auto-like, vendas)
 
 GRUPOS E MODERACAO
 /ban, /unban, /mute, /unmute, /listamute
@@ -2123,6 +2124,93 @@ app.add_handler(CommandHandler("addviplike", addviplike))
 app.add_handler(CommandHandler("removeviplike", removeviplike))
 app.add_handler(CommandHandler("listviplike", listviplike))
 app.add_handler(CommandHandler("addmensalidadelike", addmensalidadelike))
+
+def _nome_resumo(s):
+    return str(s).replace("`", "'").replace("*", "").replace("_", " ").replace("[", "(")
+
+async def _responder_resumo(update, texto):
+    try:
+        await update.message.reply_text(texto, parse_mode="Markdown")
+    except Exception:
+        await update.message.reply_text(texto.replace("`", ""))
+
+async def resumovip(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /resumovip <id_telegram>")
+        return
+    alvo = str(context.args[0]).strip()
+    usos = load_usos()
+    dados = usos.get("vip_site_usuarios", {}) or {}
+    info = dados.get(alvo)
+    if not isinstance(info, dict):
+        await update.message.reply_text(f"❌ ID {alvo} não está na lista VIP do site.")
+        return
+    saldos = usos.get("passe_usuarios", {}) or {}
+    sd = saldos.get(alvo)
+    if alvo in saldos and sd is None:
+        est = "ilimitado"
+    else:
+        try:
+            est = int(float(sd or 0))
+        except Exception:
+            est = 0
+    try:
+        vendas = int(float(info.get("vendas", 0) or 0))
+    except Exception:
+        vendas = 0
+    aut = "`SIM` ✔️" if info.get("autorizado") else "`NÃO` 🚫"
+    nome = _nome_resumo(info.get("nome") or info.get("name") or "sem nome")
+    texto = (
+        f"🫱🏻‍🫲🏼 VENDEDOR : `{nome}`\n"
+        f"🆔️ : {alvo}\n"
+        f"✅️ AUTORIZADO : {aut}\n"
+        f"📦 ESTOQUE : `{est}`\n"
+        f"⚡️ VENDAS : `{vendas}`"
+    )
+    await _responder_resumo(update, texto)
+
+async def resumoviplike(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /resumoviplike <id_telegram>")
+        return
+    alvo = str(context.args[0]).strip()
+    usos = load_usos()
+    dados = usos.get("vip_like_usuarios", {}) or {}
+    info = dados.get(alvo)
+    if not isinstance(info, dict):
+        await update.message.reply_text(f"❌ ID {alvo} não está na lista VIP de likes.")
+        return
+    n_auto = 0
+    for _u, _v in (usos.get("auto_data_site", {}) or {}).items():
+        if isinstance(_v, dict) and str(_v.get("vip_id", "")) == alvo:
+            try:
+                if float(_v.get("dias_restantes", 0) or 0) > 0:
+                    n_auto += 1
+            except Exception:
+                pass
+    try:
+        vendas = int(float(info.get("vendas", 0) or 0))
+    except Exception:
+        vendas = 0
+    aut = "`SIM` ✔️" if info.get("autorizado") else "`NÃO` 🚫"
+    nome = _nome_resumo(info.get("nome") or "sem nome")
+    texto = (
+        f"🫱🏻‍🫲🏼 VENDEDOR : `{nome}`\n"
+        f"🆔️ : {alvo}\n"
+        f"✅️ AUTORIZADO : {aut}\n"
+        f"👍🏻 IDS NO AUTO-LIKE : `{n_auto}`\n"
+        f"⚡️ VENDAS : `{vendas}`"
+    )
+    await _responder_resumo(update, texto)
+
+app.add_handler(CommandHandler("resumovip", resumovip))
+app.add_handler(CommandHandler("resumoviplike", resumoviplike))
 
 app.add_handler(CommandHandler("token", token))
 app.add_handler(CommandHandler("sitepasse", sitepasse))
