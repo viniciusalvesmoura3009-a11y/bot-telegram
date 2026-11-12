@@ -1938,6 +1938,7 @@ LIKES
 /chatautolike (dono)* - define o chat dos avisos do autolike
 /autolikesite* - autolike do site
 /usohoje, /vendas - uso e vendas do dia
+/vendidos - total vendido por produto (likes, passe, personagem, traje, emote, lotes)
 /meususos - seus usos hoje
 /usosgeral (dono) - usos de todos
 
@@ -2211,6 +2212,66 @@ async def resumoviplike(update, context):
 
 app.add_handler(CommandHandler("resumovip", resumovip))
 app.add_handler(CommandHandler("resumoviplike", resumoviplike))
+
+def load_usos_passe():
+    try:
+        r = _req.get(f"https://api.github.com/gists/{_gist()}", headers=_gh(), timeout=20)
+        arq = r.json()["files"].get("usos_passe.json")
+        return _json.loads(arq["content"]) if arq else {}
+    except Exception as e:
+        print(f"[VENDIDOS] erro ao ler usos_passe.json: {e}")
+        return {}
+
+def _contar_comprovantes(comps, tipos):
+    n = 0
+    v = 0.0
+    for c in (comps or {}).values():
+        if isinstance(c, dict) and c.get("tipo") in tipos:
+            n += 1
+            try:
+                v += float(c.get("valor", 0) or 0)
+            except Exception:
+                pass
+    return n, v
+
+def _fmt_rs(v):
+    return ("R$ %.2f" % v).replace(".", ",")
+
+async def vendidos(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    try:
+        bot_d = load_usos()
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Não consegui ler os dados: {str(e)[:120]}")
+        return
+    passe_d = load_usos_passe()
+    cb = (bot_d or {}).get("comprovantes", {}) or {}
+    cp = (passe_d or {}).get("comprovantes", {}) or {}
+
+    def linha(emoji, nome, comps, tipos, sempre=True):
+        n, v = _contar_comprovantes(comps, tipos)
+        if n == 0 and not sempre:
+            return ""
+        return f"{emoji} {nome}: {n} ({_fmt_rs(v)})\n"
+
+    texto = "📊 VENDIDOS\n\n"
+    texto += linha("👍", "Likes", cb, ("likes",))
+    texto += linha("🎫", "Passes", cp, ("passe",))
+    texto += linha("🧑", "Personagens", cp, ("personagem",))
+    texto += linha("👕", "Trajes", cp, ("traje",))
+    texto += linha("🎭", "Emotes", cp, ("emote",))
+    texto += linha("🧥", "Conjuntos", cp, ("conjunto",), False)
+    texto += linha("🎟", "Codiguins", cp, ("codiguin",), False)
+    texto += "\n🤝 MODO VIP\n"
+    texto += linha("📦", "Lotes de passes", cp, ("passe_lote",))
+    texto += linha("💳", "Mensalidades", cp, ("mensalidade_vip",))
+    texto += linha("♻️", "Reativações", cp, ("reativacao_vip",))
+    texto += "\nConta os comprovantes guardados. Vendas antigas sem comprovante não entram."
+    await update.message.reply_text(texto)
+
+app.add_handler(CommandHandler("vendidos", vendidos))
 
 app.add_handler(CommandHandler("token", token))
 app.add_handler(CommandHandler("sitepasse", sitepasse))
