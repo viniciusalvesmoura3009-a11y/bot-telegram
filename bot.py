@@ -1987,6 +1987,7 @@ INFO E UTILIDADES
 /stats - estatisticas
 /sitepasse, /sitelike - links dos sites
 /token - link da loja de tokens
+/linkzap <numero> <mensagem> - gera link do WhatsApp com mensagem pronta
 
 CONTROLE
 /manutencao - liga ou desliga manutencao dos sites
@@ -2272,6 +2273,42 @@ async def vendidos(update, context):
     await update.message.reply_text(texto)
 
 app.add_handler(CommandHandler("vendidos", vendidos))
+
+async def linkzap(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    import re as _re
+    from urllib.parse import quote as _quote
+    partes = (update.message.text or "").split(None, 1)
+    resto = partes[1].strip() if len(partes) > 1 else ""
+    if not resto:
+        await update.message.reply_text(
+            "Uso: /linkzap <numero> <mensagem>\n"
+            "Sem número, usa o seu WhatsApp: /linkzap <mensagem>\n"
+            "Exemplo: /linkzap 82999999999 Olá, tudo bem?"
+        )
+        return
+    m = _re.match(r"(\S+)\s*(.*)", resto, _re.S)
+    primeiro, msg = m.group(1), m.group(2).strip()
+    digitos = _re.sub(r"\D", "", primeiro)
+    if _re.fullmatch(r"[+\d()\-]+", primeiro) and 10 <= len(digitos) <= 13:
+        numero = digitos
+        if len(numero) in (10, 11):
+            numero = "55" + numero
+    else:
+        numero = "5582988631900"
+        msg = resto
+    link = "https://wa.me/" + numero
+    if msg:
+        link += "?text=" + _quote(msg, safe="")
+    texto = "🔗 Link pronto:\n\n`" + link + "`\n\n📱 Número: +" + numero
+    try:
+        await update.message.reply_text(texto, parse_mode="Markdown", disable_web_page_preview=True)
+    except Exception:
+        await update.message.reply_text("🔗 Link pronto:\n\n" + link + "\n\n📱 Número: +" + numero)
+
+app.add_handler(CommandHandler("linkzap", linkzap))
 
 app.add_handler(CommandHandler("token", token))
 app.add_handler(CommandHandler("sitepasse", sitepasse))
