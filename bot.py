@@ -1987,7 +1987,7 @@ INFO E UTILIDADES
 /stats - estatisticas
 /sitepasse, /sitelike - links dos sites
 /token - link da loja de tokens
-/linkzap <numero> <mensagem> - gera link do WhatsApp com mensagem pronta
+/linkzap <numero> <frase> - gera link do WhatsApp (qualquer pessoa usa)
 
 CONTROLE
 /manutencao - liga ou desliga manutencao dos sites
@@ -2275,18 +2275,16 @@ async def vendidos(update, context):
 app.add_handler(CommandHandler("vendidos", vendidos))
 
 async def linkzap(update, context):
-    if not eh_dono(update.message.from_user.id):
-        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
-        return
     import re as _re
     from urllib.parse import quote as _quote
+    dono_cmd = eh_dono(update.message.from_user.id)
     partes = (update.message.text or "").split(None, 1)
     resto = partes[1].strip() if len(partes) > 1 else ""
     if not resto:
         await update.message.reply_text(
-            "Uso: /linkzap <numero> <mensagem>\n"
-            "Sem número, usa o seu WhatsApp: /linkzap <mensagem>\n"
+            "Uso: /linkzap <numero> <frase>\n"
             "Exemplo: /linkzap 82999999999 Olá, tudo bem?"
+            + ("\nSem número, usa o seu WhatsApp: /linkzap <frase>" if dono_cmd else "")
         )
         return
     m = _re.match(r"(\S+)\s*(.*)", resto, _re.S)
@@ -2296,9 +2294,13 @@ async def linkzap(update, context):
         numero = digitos
         if len(numero) in (10, 11):
             numero = "55" + numero
-    else:
+    elif dono_cmd:
         numero = "5582988631900"
         msg = resto
+    else:
+        await update.message.reply_text("❌ Informe o número com DDD. Exemplo: /linkzap 82999999999 Olá, tudo bem?")
+        return
+    msg = msg[:1000]
     link = "https://wa.me/" + numero
     if msg:
         link += "?text=" + _quote(msg, safe="")
