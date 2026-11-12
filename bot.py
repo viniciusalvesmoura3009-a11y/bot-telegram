@@ -1960,6 +1960,8 @@ VIP E ACESSO
 /libsite, /suspendersite (dono)* - libera ou suspende conta do site
 /valorpassesite (dono)* - muda o valor do passe no site
 /liberacesso, /removeracesso, /listliberados - acesso total a outro ID
+/addviplike <id> <nome>, /removeviplike, /listviplike - revendedor de likes (site)
+/addmensalidadelike <id> [dias] - soma mensalidade do revendedor de likes
 
 GRUPOS E MODERACAO
 /ban, /unban, /mute, /unmute, /listamute
@@ -1996,6 +1998,131 @@ CONTROLE
         await update.message.reply_text(b)
 
 app.add_handler(CommandHandler("comandos", comandos))
+
+def load_vip_like():
+    usos = load_usos()
+    return usos.get("vip_like_usuarios", {})
+
+def save_vip_like(dados):
+    usos = load_usos()
+    usos["vip_like_usuarios"] = dados
+    return save_usos(usos)
+
+def _iso_mais_dias(dias, base_iso=None):
+    import datetime as _d
+    agora = _d.datetime.utcnow()
+    base = agora
+    if base_iso:
+        try:
+            b = _d.datetime.strptime(str(base_iso)[:19], "%Y-%m-%dT%H:%M:%S")
+            if b > agora:
+                base = b
+        except Exception:
+            pass
+    return (base + _d.timedelta(days=dias)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+def _mensalidade_like_txt(info):
+    import datetime as _d
+    s = info.get("mensalidade_ate")
+    if not s:
+        return "pendente"
+    try:
+        b = _d.datetime.strptime(str(s)[:19], "%Y-%m-%dT%H:%M:%S")
+        if b <= _d.datetime.utcnow():
+            return "vencida"
+        return "ate " + b.strftime("%d/%m")
+    except Exception:
+        return "pendente"
+
+async def addviplike(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if len(context.args) < 2:
+        await update.message.reply_text("Uso: /addviplike <id_telegram> <nome>")
+        return
+    alvo = str(context.args[0]).strip()
+    if not alvo.isdigit():
+        await update.message.reply_text("❌ O ID do Telegram deve ter só números.")
+        return
+    nome = " ".join(context.args[1:]).strip()
+    dados = load_vip_like()
+    existente = dados.get(alvo, {})
+    dados[alvo] = {**existente, "autorizado": True, "nome": nome}
+    if save_vip_like(dados) is False:
+        await update.message.reply_text("⚠️ Não consegui salvar. Tente de novo em alguns segundos.")
+        return
+    await update.message.reply_text(
+        f"✅ {nome} (ID {alvo}) autorizado como revendedor de likes.\n"
+        f"Mensalidade: {_mensalidade_like_txt(dados[alvo])}\n"
+        f"Ele cria a senha no site de likes: Entrar como revendedor > Criar conta."
+    )
+
+async def removeviplike(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removeviplike <id_telegram>")
+        return
+    alvo = str(context.args[0]).strip()
+    dados = load_vip_like()
+    if alvo not in dados:
+        await update.message.reply_text(f"❌ ID {alvo} não está na lista VIP de likes.")
+        return
+    dados[alvo]["autorizado"] = False
+    save_vip_like(dados)
+    await update.message.reply_text(f"✅ Acesso de {dados[alvo].get('nome', alvo)} (ID {alvo}) revogado.")
+
+async def listviplike(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    dados = load_vip_like()
+    if not dados:
+        await update.message.reply_text("Nenhum VIP de likes cadastrado ainda.")
+        return
+    linhas = ["VIPs de likes:"]
+    for k, v in dados.items():
+        if not isinstance(v, dict):
+            continue
+        st = "✅ autorizado" if v.get("autorizado") else "❌ revogado"
+        cad = "cadastrado" if v.get("cadastrado") else "aguardando cadastro"
+        linhas.append(f"ID: {k} | {st} | {cad} | {v.get('nome', 'sem nome')} | mensalidade: {_mensalidade_like_txt(v)} | vendas: {int(v.get('vendas', 0) or 0)}")
+    bloco = ""
+    for l in linhas:
+        if len(bloco) + len(l) + 1 > 3500:
+            await update.message.reply_text(bloco)
+            bloco = ""
+        bloco += l + "\n"
+    if bloco:
+        await update.message.reply_text(bloco)
+
+async def addmensalidadelike(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /addmensalidadelike <id_telegram> [dias]")
+        return
+    alvo = str(context.args[0]).strip()
+    try:
+        dias = int(context.args[1]) if len(context.args) > 1 else 30
+    except ValueError:
+        await update.message.reply_text("Uso: /addmensalidadelike <id_telegram> [dias]")
+        return
+    dados = load_vip_like()
+    if alvo not in dados:
+        await update.message.reply_text(f"❌ ID {alvo} não está na lista VIP de likes. Use /addviplike primeiro.")
+        return
+    dados[alvo]["mensalidade_ate"] = _iso_mais_dias(dias, dados[alvo].get("mensalidade_ate"))
+    save_vip_like(dados)
+    await update.message.reply_text(f"✅ Mensalidade de {dados[alvo].get('nome', alvo)} (ID {alvo}): {_mensalidade_like_txt(dados[alvo])}")
+
+app.add_handler(CommandHandler("addviplike", addviplike))
+app.add_handler(CommandHandler("removeviplike", removeviplike))
+app.add_handler(CommandHandler("listviplike", listviplike))
+app.add_handler(CommandHandler("addmensalidadelike", addmensalidadelike))
 
 app.add_handler(CommandHandler("token", token))
 app.add_handler(CommandHandler("sitepasse", sitepasse))
