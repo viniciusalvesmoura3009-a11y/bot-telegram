@@ -1988,6 +1988,9 @@ INFO E UTILIDADES
 /sitepasse, /sitelike - links dos sites
 /token - link da loja de tokens
 /linkzap <numero> <frase> - gera link do WhatsApp (qualquer pessoa usa)
+/qr <texto ou link> - gera QR Code
+/encurtar <link> - encurta o link
+/avisomensalidade - avisa VIPs que vencem em ate 3 dias (teste: /avisomensalidade teste)
 
 CONTROLE
 /manutencao - liga ou desliga manutencao dos sites
@@ -2311,6 +2314,176 @@ async def linkzap(update, context):
         await update.message.reply_text("🔗 Link pronto:\n\n" + link + "\n\n📱 Número: +" + numero)
 
 app.add_handler(CommandHandler("linkzap", linkzap))
+
+_AVISO_MENS_ENVIADOS = set()
+_ENCURTAR_ULTIMO = {}
+_LINK_PASSE_VIP = "https://site-rebelde-ff.vercel.app/passe.html"
+_LINK_LIKE_VIP = "https://rebelde-ff.vercel.app"
+
+def _parse_dt_mens(s):
+    import datetime as _d
+    if not s:
+        return None
+    t = str(s).strip().replace(" ", "T")
+    try:
+        return _d.datetime.strptime(t[:19], "%Y-%m-%dT%H:%M:%S")
+    except Exception:
+        pass
+    try:
+        return _d.datetime.strptime(t[:10], "%Y-%m-%d")
+    except Exception:
+        return None
+
+def _texto_aviso_mens(tipo, dias, data_txt):
+    d = "1 dia" if dias == 1 else f"{dias} dias"
+    if tipo == "like":
+        onde = f"Renove pelo site de likes ({_LINK_LIKE_VIP}): entre como revendedor e toque em Pagar mensalidade."
+    else:
+        onde = f"Renove na área VIP do site de passe: {_LINK_PASSE_VIP}"
+    return (
+        f"⏰ Sua mensalidade de revendedor vence em {d} ({data_txt}).\n"
+        f"Valor: R$ 7,00.\n{onde}\n"
+        f"Se vencer, você perde os preços de revendedor até renovar."
+    )
+
+async def aviso_mensalidade(context):
+    import asyncio, math
+    import datetime as _d
+    agora = _d.datetime.utcnow()
+    avisados = []
+    falhas = []
+    for tipo, loader, saver in (("site", load_vip_site, save_vip_site), ("like", load_vip_like, save_vip_like)):
+        try:
+            dados = await asyncio.to_thread(loader)
+        except Exception as e:
+            print(f"[AVISO_MENS] erro ao carregar {tipo}: {e}")
+            continue
+        alvos = []
+        for k, v in (dados or {}).items():
+            if not isinstance(v, dict) or not v.get("autorizado") or v.get("suspenso"):
+                continue
+            exp = _parse_dt_mens(v.get("mensalidade_ate"))
+            if not exp:
+                continue
+            resta = (exp - agora).total_seconds()
+            if resta <= 0 or resta > 3 * 86400:
+                continue
+            marca = str(v.get("mensalidade_ate"))
+            if v.get("aviso_mensalidade_para") == marca or (tipo, k, marca) in _AVISO_MENS_ENVIADOS:
+                continue
+            alvos.append((k, v.get("nome") or v.get("name") or "sem nome", marca, exp, resta))
+        ok_ids = []
+        for k, nome, marca, exp, resta in alvos:
+            dias = max(1, math.ceil(resta / 86400))
+            data_txt = (exp - _d.timedelta(hours=3)).strftime("%d/%m")
+            _AVISO_MENS_ENVIADOS.add((tipo, k, marca))
+            try:
+                await context.bot.send_message(chat_id=int(k), text=_texto_aviso_mens(tipo, dias, data_txt))
+                ok_ids.append((k, marca))
+                avisados.append(f"{nome} ({k}, {tipo})")
+            except Exception:
+                falhas.append(f"{nome} ({k}, {tipo})")
+        if ok_ids:
+            try:
+                fresco = await asyncio.to_thread(loader)
+                mudou = False
+                for k, marca in ok_ids:
+                    inf = (fresco or {}).get(k)
+                    if isinstance(inf, dict) and str(inf.get("mensalidade_ate")) == marca:
+                        inf["aviso_mensalidade_para"] = marca
+                        mudou = True
+                if mudou:
+                    await asyncio.to_thread(saver, fresco)
+            except Exception as e:
+                print(f"[AVISO_MENS] erro ao gravar marca {tipo}: {e}")
+    if avisados or falhas:
+        linhas = ["⏰ Avisos de mensalidade (vence em até 3 dias)"]
+        if avisados:
+            linhas.append("✅ Avisados: " + ", ".join(avisados))
+        if falhas:
+            linhas.append("📵 Sem entrega (precisam apertar Iniciar no bot): " + ", ".join(falhas))
+        try:
+            await context.bot.send_message(chat_id=int(DONO_ID), text="\n".join(linhas)[:4000])
+        except Exception:
+            pass
+    return len(avisados), len(falhas)
+
+async def avisomensalidade(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if context.args and context.args[0].lower() == "teste":
+        await update.message.reply_text(_texto_aviso_mens("site", 3, "00/00") + "\n\n(exemplo: VIP do site de passe)")
+        await update.message.reply_text(_texto_aviso_mens("like", 3, "00/00") + "\n\n(exemplo: revendedor de likes)")
+        return
+    await update.message.reply_text("🔎 Conferindo mensalidades...")
+    try:
+        a, f = await aviso_mensalidade(context)
+    except Exception as e:
+        await update.message.reply_text("⚠️ Erro ao conferir: " + str(e)[:150])
+        return
+    await update.message.reply_text(f"✅ Avisados agora: {a}\n📵 Sem entrega: {f}")
+
+async def qr_cmd(update, context):
+    partes = (update.message.text or "").split(None, 1)
+    texto = partes[1].strip() if len(partes) > 1 else ""
+    if not texto:
+        await update.message.reply_text("Uso: /qr <texto ou link>\nExemplo: /qr https://rebelde-ff.vercel.app")
+        return
+    if len(texto) > 1000:
+        await update.message.reply_text("❌ Texto muito grande (máximo 1000 caracteres).")
+        return
+    try:
+        import io
+        import segno
+    except ImportError:
+        await update.message.reply_text("⚠️ QR indisponível no momento (biblioteca ainda não instalada).")
+        return
+    try:
+        buf = io.BytesIO()
+        segno.make(texto, error="m").save(buf, kind="png", scale=10, border=3)
+        buf.seek(0)
+        buf.name = "qr.png"
+        legenda = texto if len(texto) <= 200 else texto[:197] + "..."
+        await update.message.reply_photo(photo=buf, caption=legenda)
+    except Exception as e:
+        print(f"[QR] erro: {e}")
+        await update.message.reply_text("⚠️ Não consegui gerar o QR Code.")
+
+async def encurtar(update, context):
+    import asyncio, time as _t
+    partes = (update.message.text or "").split(None, 1)
+    resto = partes[1].strip() if len(partes) > 1 else ""
+    if not resto:
+        await update.message.reply_text("Uso: /encurtar <link>\nExemplo: /encurtar https://rebelde-ff.vercel.app/passe.html")
+        return
+    url = resto.split()[0]
+    uid = update.message.from_user.id
+    agora = _t.time()
+    if not eh_dono(uid) and agora - _ENCURTAR_ULTIMO.get(uid, 0) < 15:
+        await update.message.reply_text("⏳ Aguarde alguns segundos e tente de novo.")
+        return
+    _ENCURTAR_ULTIMO[uid] = agora
+    if not url.lower().startswith(("http://", "https://")):
+        url = "https://" + url
+    if len(url) > 2000 or "." not in url:
+        await update.message.reply_text("❌ Link inválido.")
+        return
+    try:
+        r = await asyncio.to_thread(lambda: _req.get("https://is.gd/create.php", params={"format": "simple", "url": url}, timeout=10))
+        curto = (r.text or "").strip()
+    except Exception as e:
+        print(f"[ENCURTAR] erro: {e}")
+        await update.message.reply_text("⚠️ Serviço de encurtar fora do ar. Tente de novo em instantes.")
+        return
+    if r.status_code == 200 and curto.startswith("http"):
+        await update.message.reply_text("🔗 Link curto:\n" + curto, disable_web_page_preview=True)
+    else:
+        await update.message.reply_text("❌ Não consegui encurtar esse link. " + curto[:120])
+
+app.add_handler(CommandHandler("avisomensalidade", avisomensalidade))
+app.add_handler(CommandHandler("qr", qr_cmd))
+app.add_handler(CommandHandler("encurtar", encurtar))
 
 app.add_handler(CommandHandler("token", token))
 app.add_handler(CommandHandler("sitepasse", sitepasse))
@@ -3314,6 +3487,7 @@ try:
     import datetime as _dtm
     if app.job_queue:
         app.job_queue.run_daily(varredura_diaria, time=_dtm.time(hour=9, minute=5, tzinfo=_dtm.timezone(_dtm.timedelta(hours=-3))), name="varredura_vip_site")
+        app.job_queue.run_repeating(aviso_mensalidade, interval=21600, first=180)
     else:
         print("[VARREDURA] job_queue indisponivel; use /varrersite")
 except Exception as e:
