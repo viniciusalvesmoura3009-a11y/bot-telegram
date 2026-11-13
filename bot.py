@@ -1958,6 +1958,7 @@ VIP E ACESSO
 /vipsite, /removervipsite, /listvipsite - VIP do site
 /addmensalidade - soma mensalidade VIP (R$ 7,00 por 30 dias)
 /excluirvipsite, /limparvipsite - apaga contas VIP revogadas do site
+/isentovip <id> [nao] - isenta VIP da suspensao por falta de estoque
 /libsite, /suspendersite (dono)* - libera ou suspende conta do site
 /valorpassesite (dono)* - muda o valor do passe no site
 /liberacesso, /removeracesso, /listliberados - acesso total a outro ID
@@ -2484,6 +2485,42 @@ async def encurtar(update, context):
 app.add_handler(CommandHandler("avisomensalidade", avisomensalidade))
 app.add_handler(CommandHandler("qr", qr_cmd))
 app.add_handler(CommandHandler("encurtar", encurtar))
+
+async def isentovip(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text(
+            "Uso: /isentovip <id_telegram>\n"
+            "Para remover a isenção: /isentovip <id_telegram> nao\n"
+            "Isento = nunca é suspenso por falta de estoque."
+        )
+        return
+    alvo = str(context.args[0]).strip()
+    remover = len(context.args) > 1 and context.args[1].lower() in ("nao", "não", "off", "remover")
+    dados = load_vip_site()
+    info = dados.get(alvo)
+    if not isinstance(info, dict):
+        await update.message.reply_text("❌ ID " + alvo + " não está na lista VIP do site.")
+        return
+    if remover:
+        info.pop("isento", None)
+    else:
+        info["isento"] = True
+        info.pop("sem_estoque_desde", None)
+    dados[alvo] = info
+    r = save_vip_site(dados)
+    if r is False:
+        await update.message.reply_text("⚠️ Não consegui salvar. Tente de novo em alguns segundos.")
+        return
+    nome = info.get("nome") or info.get("name") or "sem nome"
+    if remover:
+        await update.message.reply_text("✅ " + str(nome) + " (" + alvo + ") deixou de ser isento.")
+    else:
+        await update.message.reply_text("✅ " + str(nome) + " (" + alvo + ") agora é ISENTO: não será suspenso por falta de estoque.")
+
+app.add_handler(CommandHandler("isentovip", isentovip))
 
 app.add_handler(CommandHandler("token", token))
 app.add_handler(CommandHandler("sitepasse", sitepasse))
@@ -3206,7 +3243,7 @@ async def listvipsite(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 extra = f" | sem estoque ha {int((agora_ms - v) // 86400000)}d"
         except Exception:
             pass
-        susp = " | SUSPENSA" if info.get("suspenso") else ""
+        susp = (" | SUSPENSA" if info.get("suspenso") else "") + (" | ISENTO" if info.get("isento") else "")
         linhas.append(f"ID: {id_tg} | {status} | {cad}{nome_txt} | estoque: {est}{extra}{susp}")
     bloco = ""
     for _l in linhas:
@@ -3301,6 +3338,11 @@ def _varrer_vip_site(aplicar):
     novos, avisos, iniciados, zerados = [], [], 0, 0
     for k, info in vip.items():
         if not isinstance(info, dict) or not info.get("autorizado") or info.get("suspenso"):
+            continue
+        if info.get("isento"):
+            if info.get("sem_estoque_desde") and aplicar:
+                info.pop("sem_estoque_desde", None)
+                zerados += 1
             continue
         try:
             sd = float(saldos.get(str(k), 0) or 0)
