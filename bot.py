@@ -53,7 +53,7 @@ async def banff(update, context):
     await update.message.reply_text('⏳ Processando modo de banimento e enviando requisição...')
 
     try:
-        # 4. MONTAGEM DINAMICA (nomes conforme a API: uid, password, access_token, jwt_token, time)
+        # 4. MONTAGEM DINAMICA (cada API tem seu proprio formato)
         payload = {}
 
         for item in dados_entrada:
@@ -66,18 +66,21 @@ async def banff(update, context):
             else:  # Senha
                 payload['password'] = item
 
-        if 'jwt_token' in payload:  # a API pede jwt_token sozinho, sem access_token
-            payload.pop('access_token', None)
+        if prazo == '7d':
+            payload = {k: v for k, v in payload.items() if k in ('access_token', 'jwt_token')}
+        else:
+            if 'jwt_token' in payload:
+                payload.pop('access_token', None)
+            payload['time'] = prazo
 
-        payload['time'] = prazo
-
-        # 5. Envio para a API (GET, conforme a documentacao)
+        # 5. Envio para a API (GET)
         response = requests.get(url, params=payload, timeout=15)
 
+        corpo = (response.text or '')[:300]
         if response.status_code == 200:
-            await update.message.reply_text(f'✅ **Sucesso!**\n\nBanimento processado via modo dinâmico.\n⏳ Validade: {prazo}')
+            await update.message.reply_text(f'✅ **Resposta da API (HTTP 200)**\n\nValidade: {prazo}\n\n📋 Retorno:\n{corpo}')
         else:
-            await update.message.reply_text(f'❌ **Erro da API**\n\nO servidor respondeu: {response.status_code}\nVerifique se os dados enviados são válidos para esse modo de ban.')
+            await update.message.reply_text(f'❌ **Erro da API (HTTP {response.status_code})**\n\n📋 Retorno:\n{corpo}')
 
     except Exception as e:
         await update.message.reply_text(f'❌ **Erro de Conexão**: {str(e)}')
