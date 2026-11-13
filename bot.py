@@ -29,6 +29,17 @@ import requests
 import os
 import requests
 
+def _limpar_retorno_banff(texto):
+    try:
+        import json as _json2
+        d = _json2.loads(texto)
+        alvo = d.get('result') if isinstance(d.get('result'), dict) else d
+        for k in ('Developers', 'TelegramChannel'):
+            alvo.pop(k, None)
+        return _json2.dumps(d, ensure_ascii=False, indent=2)[:300]
+    except Exception:
+        return texto[:300]
+
 async def banff(update, context):
     # 1. Captura tudo que foi digitado após o /banff
     args = context.args
@@ -76,11 +87,11 @@ async def banff(update, context):
         # 5. Envio para a API (GET)
         response = requests.get(url, params=payload, timeout=15)
 
-        corpo = (response.text or '')[:300]
+        corpo = _limpar_retorno_banff(response.text or '')
         if response.status_code == 200:
-            await update.message.reply_text(f'✅ **Resposta da API (HTTP 200)**\n\nValidade: {prazo}\n\n📋 Retorno:\n{corpo}')
+            await update.message.reply_text(f'✅ **Resposta da API (HTTP 200)**\n\nValidade: {prazo}\n\n📋 Retorno:\n{corpo}', disable_web_page_preview=True)
         else:
-            await update.message.reply_text(f'❌ **Erro da API (HTTP {response.status_code})**\n\n📋 Retorno:\n{corpo}')
+            await update.message.reply_text(f'❌ **Erro da API (HTTP {response.status_code})**\n\n📋 Retorno:\n{corpo}', disable_web_page_preview=True)
 
     except Exception as e:
         await update.message.reply_text(f'❌ **Erro de Conexão**: {str(e)}')
