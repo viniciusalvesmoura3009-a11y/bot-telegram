@@ -53,22 +53,26 @@ async def banff(update, context):
     await update.message.reply_text('⏳ Processando modo de banimento e enviando requisição...')
 
     try:
-        # 4. MONTAGEM DINÂMICA (A Mágica acontece aqui)
-        # O bot vai tentar adivinhar o que cada dado é baseado no tamanho e formato
+        # 4. MONTAGEM DINAMICA (nomes conforme a API: uid, password, access_token, jwt_token, time)
         payload = {}
-        
-        for item in dados_entrada:
-            if item.isdigit(): # Se for só número, é o ID (UID)
-                payload['id'] = item
-            elif len(item) > 100: # Se for um código gigante, é o JWT
-                payload['jwt'] = item
-            elif len(item) > 20 and len(item) < 100: # Se for médio, é o Access Token
-                payload['token'] = item
-            else: # Se for curto e não for número, é a Senha
-                payload['senha'] = item
 
-        # 5. Envio para a API (Ela aceitará qualquer combinação que o bot montou)
-        response = requests.post(url, data=payload, timeout=15)
+        for item in dados_entrada:
+            if item.isdigit():  # UID
+                payload['uid'] = item
+            elif len(item) > 100:  # JWT do jogo
+                payload['jwt_token'] = item
+            elif len(item) > 20 and len(item) < 100:  # Access Token
+                payload['access_token'] = item
+            else:  # Senha
+                payload['password'] = item
+
+        if 'jwt_token' in payload:  # a API pede jwt_token sozinho, sem access_token
+            payload.pop('access_token', None)
+
+        payload['time'] = prazo
+
+        # 5. Envio para a API (GET, conforme a documentacao)
+        response = requests.get(url, params=payload, timeout=15)
 
         if response.status_code == 200:
             await update.message.reply_text(f'✅ **Sucesso!**\n\nBanimento processado via modo dinâmico.\n⏳ Validade: {prazo}')
