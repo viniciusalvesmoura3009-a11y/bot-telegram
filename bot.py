@@ -2466,7 +2466,7 @@ async def qr_cmd(update, context):
         return
     try:
         buf = io.BytesIO()
-        segno.make(texto, error="m").save(buf, kind="png", scale=10, border=3)
+        segno.make(texto, error="m", micro=False).save(buf, kind="png", scale=10, border=4)
         buf.seek(0)
         buf.name = "qr.png"
         legenda = texto if len(texto) <= 200 else texto[:197] + "..."
