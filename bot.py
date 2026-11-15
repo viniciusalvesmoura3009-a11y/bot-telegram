@@ -2735,10 +2735,10 @@ def _cmp_voltar(destino):
 def _cmp_kb_categorias():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("💜 Likes / Planos", callback_data="cmpcat_likes")],
-        [InlineKeyboardButton("🎫 Passe Booyah", callback_data="cmpcat_passe")],
+        [InlineKeyboardButton("🎫 Passe Booyah - R$ 6,00", callback_data="cmpcat_passe")],
         [InlineKeyboardButton("👕 Traje", callback_data="cmpcat_traje")],
         [InlineKeyboardButton("🎭 Emote", callback_data="cmpcat_emote")],
-        [InlineKeyboardButton("🧑 Personagem (pacote de 50)", callback_data="cmpcat_personagem")],
+        [InlineKeyboardButton("🧑 Personagem (pacote de 50) - R$ 4,00", callback_data="cmpcat_personagem")],
     ])
 
 async def comprar_start(update, context):
@@ -2767,7 +2767,7 @@ async def _cmp_mostrar_produtos(query, context, cat):
         await query.edit_message_text("💜 Escolha o pacote:", reply_markup=InlineKeyboardMarkup(kb))
         return CMP_PROD
     if cat == "traje":
-        kb = [[InlineKeyboardButton(nome_m, callback_data="cmpprod_" + mid)] for mid, nome_m in CMP_MODELOS_TRAJE]
+        kb = [[InlineKeyboardButton(f"{nome_m} - R$ 20,00", callback_data="cmpprod_" + mid)] for mid, nome_m in CMP_MODELOS_TRAJE]
         kb.append(_cmp_voltar("prod"))
         await query.edit_message_text("👕 Escolha o modelo:", reply_markup=InlineKeyboardMarkup(kb))
         return CMP_PROD
