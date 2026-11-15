@@ -1958,6 +1958,7 @@ LIKES
 /usohoje, /vendas - uso e vendas do dia
 /vendidos - total vendido por produto (likes, passe, personagem, traje, emote, lotes)
 /backupgist - faz backup do Gist principal agora (tambem roda sozinho de madrugada)
+/addcupom <codigo> <%> <limite> [produto], /removecupom, /listcupons - cupons de desconto
 /meususos - seus usos hoje
 /usosgeral (dono) - usos de todos
 
@@ -2596,6 +2597,108 @@ async def backup_diario(context):
         print(f"[BACKUP_DIARIO] erro: {e}")
 
 app.add_handler(CommandHandler("backupgist", backupgist))
+
+def load_cupons():
+    usos = load_usos()
+    return usos.get("cupons", {})
+
+def save_cupons(cupons):
+    usos = load_usos()
+    usos["cupons"] = cupons
+    return save_usos(usos)
+
+PRODUTOS_VALIDOS_CUPOM = {"passe", "traje", "emote", "personagem", "likes", "vip", "tudo"}
+
+async def addcupom(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if len(context.args) < 3:
+        await update.message.reply_text(
+            "Uso: /addcupom <codigo> <percentual> <limite_pessoas> [produto]\n"
+            "Exemplo: /addcupom FFVENDAS 15 10\n"
+            "Exemplo so pro passe: /addcupom SOPASSE 15 10 passe\n"
+            "produto: passe, traje, emote, personagem, likes, vip ou tudo (padrao: tudo)"
+        )
+        return
+    codigo = context.args[0].strip().upper()
+    try:
+        pct = float(context.args[1].replace(",", "."))
+        limite = int(context.args[2])
+    except ValueError:
+        await update.message.reply_text("❌ Percentual e limite precisam ser números. Exemplo: /addcupom FFVENDAS 15 10")
+        return
+    if pct <= 0 or pct >= 90:
+        await update.message.reply_text("❌ Percentual deve ser entre 1 e 89.")
+        return
+    if limite <= 0:
+        await update.message.reply_text("❌ Limite de pessoas deve ser maior que 0.")
+        return
+    produto = context.args[3].strip().lower() if len(context.args) > 3 else "tudo"
+    if produto not in PRODUTOS_VALIDOS_CUPOM:
+        await update.message.reply_text("❌ Produto inválido. Use: " + ", ".join(sorted(PRODUTOS_VALIDOS_CUPOM)))
+        return
+    cupons = load_cupons()
+    cupons[codigo] = {
+        "percentual": pct,
+        "limite_pessoas": limite,
+        "produto": produto,
+        "usados_por": cupons.get(codigo, {}).get("usados_por", []),
+        "ativo": True,
+    }
+    r = save_cupons(cupons)
+    if r is False:
+        await update.message.reply_text("⚠️ Não consegui salvar. Tente de novo em alguns segundos.")
+        return
+    alvo_txt = "todos os produtos" if produto == "tudo" else produto
+    await update.message.reply_text(
+        f"✅ Cupom {codigo} criado: {pct:g}% off em {alvo_txt}, válido pra {limite} pessoas (1 uso cada)."
+    )
+
+async def removecupom(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    if not context.args:
+        await update.message.reply_text("Uso: /removecupom <codigo>")
+        return
+    codigo = context.args[0].strip().upper()
+    cupons = load_cupons()
+    if codigo not in cupons:
+        await update.message.reply_text(f"❌ Cupom {codigo} não existe.")
+        return
+    cupons[codigo]["ativo"] = False
+    save_cupons(cupons)
+    await update.message.reply_text(f"✅ Cupom {codigo} desativado.")
+
+async def listcupons(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    cupons = load_cupons()
+    if not cupons:
+        await update.message.reply_text("Nenhum cupom cadastrado ainda.")
+        return
+    linhas = ["🎟 Cupons:"]
+    for cod, c in cupons.items():
+        if not isinstance(c, dict):
+            continue
+        usados = len(c.get("usados_por", []))
+        limite = c.get("limite_pessoas", 0)
+        status = "✅ ativo" if c.get("ativo") else "❌ desativado"
+        linhas.append(f"{cod}: {c.get('percentual', 0):g}% off | {c.get('produto', 'tudo')} | {usados}/{limite} usos | {status}")
+    bloco = ""
+    for l in linhas:
+        if len(bloco) + len(l) + 1 > 3500:
+            await update.message.reply_text(bloco)
+            bloco = ""
+        bloco += l + "\n"
+    if bloco:
+        await update.message.reply_text(bloco)
+
+app.add_handler(CommandHandler("addcupom", addcupom))
+app.add_handler(CommandHandler("removecupom", removecupom))
+app.add_handler(CommandHandler("listcupons", listcupons))
 
 app.add_handler(CommandHandler("token", token))
 app.add_handler(CommandHandler("sitepasse", sitepasse))
