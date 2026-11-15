@@ -1957,6 +1957,7 @@ LIKES
 /autolikesite* - autolike do site
 /usohoje, /vendas - uso e vendas do dia
 /vendidos - total vendido por produto (likes, passe, personagem, traje, emote, lotes)
+/backupgist - faz backup do Gist principal agora (tambem roda sozinho de madrugada)
 /meususos - seus usos hoje
 /usosgeral (dono) - usos de todos
 
@@ -2539,6 +2540,62 @@ async def isentovip(update, context):
         await update.message.reply_text("✅ " + str(nome) + " (" + alvo + ") agora é ISENTO: não será suspenso por falta de estoque.")
 
 app.add_handler(CommandHandler("isentovip", isentovip))
+
+def _fazer_backup_gist():
+    import datetime as _dt
+    gid = _gist()
+    r = _req.get(f"https://api.github.com/gists/{gid}", headers=_gh(), timeout=20)
+    r.raise_for_status()
+    arquivos = r.json().get("files", {})
+    conteudo_bot = (arquivos.get(GIST_FILENAME) or {}).get("content", "{}")
+    conteudo_passe = (arquivos.get("usos_passe.json") or {}).get("content", "{}")
+
+    rl = _req.get("https://api.github.com/gists", headers=_gh(), timeout=20)
+    rl.raise_for_status()
+    backup_id = None
+    for g in rl.json():
+        if "backup_usos_bot.json" in (g.get("files") or {}):
+            backup_id = g["id"]
+            break
+
+    agora = _dt.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+    payload = {
+        "description": "Backup Rebelde FF - " + agora,
+        "public": False,
+        "files": {
+            "backup_usos_bot.json": {"content": conteudo_bot},
+            "backup_usos_passe.json": {"content": conteudo_passe},
+        },
+    }
+    if backup_id:
+        rr = _req.patch(f"https://api.github.com/gists/{backup_id}", headers=_gh(), json=payload, timeout=20)
+    else:
+        rr = _req.post("https://api.github.com/gists", headers=_gh(), json=payload, timeout=20)
+    rr.raise_for_status()
+    return rr.json().get("html_url", ""), agora
+
+async def backupgist(update, context):
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Apenas o dono pode usar este comando.")
+        return
+    await update.message.reply_text("🔄 Fazendo backup...")
+    try:
+        link, agora = await context.application.create_task(
+            __import__("asyncio").to_thread(_fazer_backup_gist)
+        )
+        await update.message.reply_text(f"✅ Backup feito ({agora})\n🔗 {link}")
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Erro ao fazer backup: {str(e)[:150]}")
+
+async def backup_diario(context):
+    try:
+        import asyncio
+        link, agora = await asyncio.to_thread(_fazer_backup_gist)
+        print(f"[BACKUP_DIARIO] ok em {agora}: {link}")
+    except Exception as e:
+        print(f"[BACKUP_DIARIO] erro: {e}")
+
+app.add_handler(CommandHandler("backupgist", backupgist))
 
 app.add_handler(CommandHandler("token", token))
 app.add_handler(CommandHandler("sitepasse", sitepasse))
@@ -3547,6 +3604,7 @@ try:
     import datetime as _dtm
     if app.job_queue:
         app.job_queue.run_daily(varredura_diaria, time=_dtm.time(hour=9, minute=5, tzinfo=_dtm.timezone(_dtm.timedelta(hours=-3))), name="varredura_vip_site")
+        app.job_queue.run_daily(backup_diario, time=_dtm.time(hour=4, minute=0, tzinfo=_dtm.timezone(_dtm.timedelta(hours=-3))))
         app.job_queue.run_repeating(aviso_mensalidade, interval=21600, first=180)
     else:
         print("[VARREDURA] job_queue indisponivel; use /varrersite")
