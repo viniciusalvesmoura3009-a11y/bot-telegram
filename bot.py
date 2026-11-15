@@ -2723,40 +2723,52 @@ CMP_MODELOS_TRAJE = [
     ("velho_rabujento", "Velho Rabujento"),
 ]
 
-async def comprar_start(update, context):
-    if update.effective_chat.type != "private":
-        await update.message.reply_text(f"🔒 Faça sua compra no privado: https://t.me/{context.bot.username}?start=comprar")
-        return ConversationHandler.END
-    context.user_data["comprar"] = {}
-    kb = [
+CMP_TXT_CAT = "🛒 *O que você quer comprar?*"
+CMP_TXT_NOME = "👤 Agora, digite seu *nome*:"
+CMP_TXT_UID = "🆔 Agora digite o *UID* (ID do jogo):"
+CMP_TXT_WHATS = "📱 Agora digite seu *WhatsApp* com DDD (ex: 11999998888):"
+CMP_TXT_CUPOM = "🎟 Se tiver um *cupom de desconto*, digite agora.\nSe não tiver, mande /pular"
+
+def _cmp_voltar(destino):
+    return [InlineKeyboardButton("⬅️ Voltar", callback_data="cmpvoltar_" + destino)]
+
+def _cmp_kb_categorias():
+    return InlineKeyboardMarkup([
         [InlineKeyboardButton("💜 Likes / Planos", callback_data="cmpcat_likes")],
         [InlineKeyboardButton("🎫 Passe Booyah", callback_data="cmpcat_passe")],
         [InlineKeyboardButton("👕 Traje", callback_data="cmpcat_traje")],
         [InlineKeyboardButton("🎭 Emote", callback_data="cmpcat_emote")],
         [InlineKeyboardButton("🧑 Personagem (pacote de 50)", callback_data="cmpcat_personagem")],
-    ]
-    await update.message.reply_text("🛒 *O que você quer comprar?*", reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
+    ])
+
+async def comprar_start(update, context):
+    if update.effective_chat.type != "private":
+        await update.message.reply_text(f"🔒 Faça sua compra no privado: https://t.me/{context.bot.username}?start=comprar")
+        return ConversationHandler.END
+    context.user_data["comprar"] = {}
+    m = await update.message.reply_text(CMP_TXT_CAT, reply_markup=_cmp_kb_categorias(), parse_mode="Markdown")
+    context.user_data["comprar"]["_msg_id"] = m.message_id
     return CMP_CAT
 
 async def comprar_pede_nome(update_or_query, context, editar=False):
-    texto = "👤 Agora, digite seu *nome*:"
+    markup = InlineKeyboardMarkup([_cmp_voltar("nome")])
     if editar:
-        await update_or_query.edit_message_text(texto, parse_mode="Markdown")
+        await update_or_query.edit_message_text(CMP_TXT_NOME, reply_markup=markup, parse_mode="Markdown")
+        context.user_data["comprar"]["_msg_id"] = update_or_query.message.message_id
     else:
-        await update_or_query.message.reply_text(texto, parse_mode="Markdown")
+        m = await update_or_query.message.reply_text(CMP_TXT_NOME, reply_markup=markup, parse_mode="Markdown")
+        context.user_data["comprar"]["_msg_id"] = m.message_id
     return CMP_NOME
 
-async def comprar_cat_choice(update, context):
-    query = update.callback_query
-    await query.answer()
-    cat = query.data.replace("cmpcat_", "")
-    context.user_data["comprar"]["categoria"] = cat
+async def _cmp_mostrar_produtos(query, context, cat):
     if cat == "likes":
         kb = [[InlineKeyboardButton(label, callback_data="cmpprod_" + pid)] for pid, label in CMP_PACOTES_LIKES]
+        kb.append(_cmp_voltar("prod"))
         await query.edit_message_text("💜 Escolha o pacote:", reply_markup=InlineKeyboardMarkup(kb))
         return CMP_PROD
     if cat == "traje":
         kb = [[InlineKeyboardButton(nome_m, callback_data="cmpprod_" + mid)] for mid, nome_m in CMP_MODELOS_TRAJE]
+        kb.append(_cmp_voltar("prod"))
         await query.edit_message_text("👕 Escolha o modelo:", reply_markup=InlineKeyboardMarkup(kb))
         return CMP_PROD
     if cat == "emote":
@@ -2767,8 +2779,8 @@ async def comprar_cat_choice(update, context):
             if not lista_e:
                 raise ValueError("vazio")
         except Exception:
-            await query.edit_message_text("⚠️ Não consegui carregar a lista de emotes agora. Tente de novo em instantes.")
-            return ConversationHandler.END
+            await query.edit_message_text("⚠️ Não consegui carregar a lista de emotes agora. Tente de novo em instantes.", reply_markup=InlineKeyboardMarkup([_cmp_voltar("prod")]))
+            return CMP_PROD
         kb = []
         for em in lista_e[:20]:
             slug_e = em.get("slug") or em.get("id")
@@ -2779,15 +2791,22 @@ async def comprar_cat_choice(update, context):
             label = f"{nome_e} - R$ {preco_e}" if preco_e else str(nome_e)
             kb.append([InlineKeyboardButton(label, callback_data="cmpprod_" + str(slug_e))])
         if not kb:
-            await query.edit_message_text("⚠️ Nenhum emote disponível agora.")
-            return ConversationHandler.END
+            await query.edit_message_text("⚠️ Nenhum emote disponível agora.", reply_markup=InlineKeyboardMarkup([_cmp_voltar("prod")]))
+            return CMP_PROD
+        kb.append(_cmp_voltar("prod"))
         await query.edit_message_text("🎭 Escolha o emote:", reply_markup=InlineKeyboardMarkup(kb))
         return CMP_PROD
-    if cat == "passe":
-        context.user_data["comprar"]["tipo"] = "passe"
-        return await comprar_pede_nome(query, context, editar=True)
-    if cat == "personagem":
-        context.user_data["comprar"]["tipo"] = "personagem"
+    return CMP_CAT
+
+async def comprar_cat_choice(update, context):
+    query = update.callback_query
+    await query.answer()
+    cat = query.data.replace("cmpcat_", "")
+    context.user_data["comprar"] = {"categoria": cat, "_msg_id": query.message.message_id}
+    if cat in ("likes", "traje", "emote"):
+        return await _cmp_mostrar_produtos(query, context, cat)
+    if cat in ("passe", "personagem"):
+        context.user_data["comprar"]["tipo"] = cat
         return await comprar_pede_nome(query, context, editar=True)
     return ConversationHandler.END
 
@@ -2795,16 +2814,41 @@ async def comprar_prod_choice(update, context):
     query = update.callback_query
     await query.answer()
     valor_cb = query.data.replace("cmpprod_", "")
-    cat = context.user_data["comprar"].get("categoria")
+    d = context.user_data.setdefault("comprar", {})
+    cat = d.get("categoria")
     if cat == "likes":
-        context.user_data["comprar"]["packageId"] = valor_cb
+        d["packageId"] = valor_cb
     elif cat == "traje":
-        context.user_data["comprar"]["tipo"] = "traje"
-        context.user_data["comprar"]["modelo"] = valor_cb
+        d["tipo"] = "traje"
+        d["modelo"] = valor_cb
     elif cat == "emote":
-        context.user_data["comprar"]["tipo"] = "emote"
-        context.user_data["comprar"]["slug"] = valor_cb
+        d["tipo"] = "emote"
+        d["slug"] = valor_cb
     return await comprar_pede_nome(query, context, editar=True)
+
+async def comprar_voltar(update, context):
+    query = update.callback_query
+    d = context.user_data.setdefault("comprar", {})
+    if d.get("_msg_id") and query.message.message_id != d["_msg_id"]:
+        await query.answer("Esse botão expirou. Use o último menu.")
+        return
+    await query.answer()
+    de = query.data.replace("cmpvoltar_", "")
+    if de == "prod" or (de == "nome" and d.get("categoria") not in ("likes", "traje", "emote")):
+        context.user_data["comprar"] = {"_msg_id": query.message.message_id}
+        await query.edit_message_text(CMP_TXT_CAT, reply_markup=_cmp_kb_categorias(), parse_mode="Markdown")
+        return CMP_CAT
+    if de == "nome":
+        return await _cmp_mostrar_produtos(query, context, d.get("categoria"))
+    if de == "uid":
+        return await comprar_pede_nome(query, context, editar=True)
+    if de == "whats":
+        await query.edit_message_text(CMP_TXT_UID, reply_markup=InlineKeyboardMarkup([_cmp_voltar("uid")]), parse_mode="Markdown")
+        return CMP_UID
+    if de == "cupom":
+        await query.edit_message_text(CMP_TXT_WHATS, reply_markup=InlineKeyboardMarkup([_cmp_voltar("whats")]), parse_mode="Markdown")
+        return CMP_WHATS
+    return CMP_CAT
 
 async def comprar_nome(update, context):
     nome = (update.message.text or "").strip()
@@ -2812,7 +2856,8 @@ async def comprar_nome(update, context):
         await update.message.reply_text("❌ Digite um nome válido.")
         return CMP_NOME
     context.user_data["comprar"]["nome"] = nome[:60]
-    await update.message.reply_text("🆔 Agora digite o *UID* (ID do jogo):", parse_mode="Markdown")
+    m = await update.message.reply_text(CMP_TXT_UID, reply_markup=InlineKeyboardMarkup([_cmp_voltar("uid")]), parse_mode="Markdown")
+    context.user_data["comprar"]["_msg_id"] = m.message_id
     return CMP_UID
 
 async def comprar_uid(update, context):
@@ -2821,7 +2866,8 @@ async def comprar_uid(update, context):
         await update.message.reply_text("❌ O UID deve conter só números. Tente de novo:")
         return CMP_UID
     context.user_data["comprar"]["uid"] = uid_txt
-    await update.message.reply_text("📱 Agora digite seu *WhatsApp* com DDD (ex: 11999998888):", parse_mode="Markdown")
+    m = await update.message.reply_text(CMP_TXT_WHATS, reply_markup=InlineKeyboardMarkup([_cmp_voltar("whats")]), parse_mode="Markdown")
+    context.user_data["comprar"]["_msg_id"] = m.message_id
     return CMP_WHATS
 
 async def comprar_whats(update, context):
@@ -2830,10 +2876,8 @@ async def comprar_whats(update, context):
         await update.message.reply_text("❌ Número inválido. Digite com DDD, ex: 11999998888")
         return CMP_WHATS
     context.user_data["comprar"]["whatsapp"] = w
-    await update.message.reply_text(
-        "🎟 Se tiver um *cupom de desconto*, digite agora.\nSe não tiver, mande /pular",
-        parse_mode="Markdown",
-    )
+    m = await update.message.reply_text(CMP_TXT_CUPOM, reply_markup=InlineKeyboardMarkup([_cmp_voltar("cupom")]), parse_mode="Markdown")
+    context.user_data["comprar"]["_msg_id"] = m.message_id
     return CMP_CUPOM
 
 async def comprar_gerar(update, context, cupom_txt):
@@ -2914,15 +2958,17 @@ async def comprar_cancelar(update, context):
     return ConversationHandler.END
 
 def get_comprar_handler():
+    voltar = CallbackQueryHandler(comprar_voltar, pattern="^cmpvoltar_")
     return ConversationHandler(
         entry_points=[CommandHandler("comprar", comprar_start)],
         states={
             CMP_CAT: [CallbackQueryHandler(comprar_cat_choice, pattern="^cmpcat_")],
-            CMP_PROD: [CallbackQueryHandler(comprar_prod_choice, pattern="^cmpprod_")],
-            CMP_NOME: [MessageHandler(filters.TEXT & ~filters.COMMAND, comprar_nome)],
-            CMP_UID: [MessageHandler(filters.TEXT & ~filters.COMMAND, comprar_uid)],
-            CMP_WHATS: [MessageHandler(filters.TEXT & ~filters.COMMAND, comprar_whats)],
+            CMP_PROD: [CallbackQueryHandler(comprar_prod_choice, pattern="^cmpprod_"), voltar],
+            CMP_NOME: [voltar, MessageHandler(filters.TEXT & ~filters.COMMAND, comprar_nome)],
+            CMP_UID: [voltar, MessageHandler(filters.TEXT & ~filters.COMMAND, comprar_uid)],
+            CMP_WHATS: [voltar, MessageHandler(filters.TEXT & ~filters.COMMAND, comprar_whats)],
             CMP_CUPOM: [
+                voltar,
                 CommandHandler("pular", comprar_pular),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, comprar_cupom),
             ],
