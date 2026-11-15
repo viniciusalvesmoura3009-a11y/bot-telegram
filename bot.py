@@ -23,6 +23,7 @@ import asyncio
 import time
 time.sleep(5)
 from telegram import Update, ChatPermissions
+from telegram.ext import ConversationHandler
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler, ApplicationHandlerStop
 
 FRIFAS_KEY = "907f821b-7f62-201e-4f5b-fa0083e6e447"
