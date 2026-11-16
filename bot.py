@@ -2198,7 +2198,8 @@ async def resumovip(update, context):
         f"🆔️ : {alvo}\n"
         f"✅️ AUTORIZADO : {aut}\n"
         f"📦 ESTOQUE : `{est}`\n"
-        f"⚡️ VENDAS : `{vendas}`"
+        f"⚡️ VENDAS (site) : `{vendas}`\n"
+        f"⚡️ VENDAS (bot /passe) : `{int(float(info.get('vendas_bot_passe', 0) or 0))}`"
     )
     await _responder_resumo(update, texto)
 
@@ -3329,6 +3330,18 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     limite = PASSE_USUARIOS.get(uid_solicitante)
                     if limite is not None:
                         PASSE_USUARIOS[uid_solicitante] = limite - 1
+                        try:
+                            _usos_v = load_usos()
+                            _vip_v = _usos_v.get('vip_site_usuarios', {}) or {}
+                            _info_v = _vip_v.get(str(uid_solicitante))
+                            if isinstance(_info_v, dict):
+                                _info_v['vendas_bot_passe'] = int(_info_v.get('vendas_bot_passe', 0) or 0) + 1
+                                _vip_v[str(uid_solicitante)] = _info_v
+                                _usos_v['vip_site_usuarios'] = _vip_v
+                                save_usos(_usos_v)
+                        except Exception as _e_vb:
+                            print(f'[VENDAS_BOT_PASSE] erro: {_e_vb}')
+
                         save_passe_usuarios(PASSE_USUARIOS)
                 await query.edit_message_text(msg)
             else:
