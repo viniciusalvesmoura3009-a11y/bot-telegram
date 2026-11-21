@@ -1361,8 +1361,52 @@ async def ban(update, context):
     await update.message.reply_text("🚫 USUÁRIO BANIDO!\n👤 Nome: " + str(nome_banido) + "\n🆔 ID: " + str(user.id))
 avisos_link = {}
 
+_AT_HIST = {}
+_AT_ULTIMO = {}
+_AT_FALLBACK = "Opa, tive um probleminha aqui 😅 Chama a gente no WhatsApp (82) 98863-1900 (atendimento das 08h às 20h) que resolvemos rapidinho!"
+
+
+def _atendimento_chamar(hist, uid):
+    url = (os.environ.get("ATENDIMENTO_URL") or "").strip()
+    cab = {"x-bot-key": os.environ.get("BOT_CHAT_KEY", "")}
+    r = requests.post(url + "?acao=chat&site=like", json={"mensagens": hist, "uid": str(uid)}, headers=cab, timeout=40)
+    return (r.json().get("resposta") or "").strip()
+
+
+async def _atendimento_privado(update, context):
+    msg = update.message
+    uid = msg.from_user.id
+    agora = time.time()
+    if agora - _AT_ULTIMO.get(uid, 0) < 3:
+        return
+    _AT_ULTIMO[uid] = agora
+    h = _AT_HIST.setdefault(uid, [])
+    h.append({"role": "user", "content": msg.text[:500]})
+    del h[:-8]
+    while h and h[0]["role"] != "user":
+        h.pop(0)
+    try:
+        await msg.chat.send_action("typing")
+    except Exception:
+        pass
+    try:
+        resp = await asyncio.to_thread(_atendimento_chamar, list(h), uid)
+    except Exception as e:
+        print("[ATENDIMENTO] falhou: " + str(e))
+        resp = ""
+    if not resp:
+        h.pop()
+        await msg.reply_text(_AT_FALLBACK)
+        return
+    h.append({"role": "assistant", "content": resp})
+    await msg.reply_text(resp[:4000])
+
+
 async def anti_link(update, context):
     msg = update.message
+    if msg and msg.text and msg.chat.type == "private" and os.environ.get("ATENDIMENTO_URL") and not re.search(r"(https?://|t.me/|www.)", msg.text):
+        await _atendimento_privado(update, context)
+        return
     if msg and msg.text:
         import re
         if re.search(r"(https?://|t.me/|www.)", msg.text):
