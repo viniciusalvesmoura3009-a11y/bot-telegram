@@ -1403,6 +1403,7 @@ async def _atendimento_privado(update, context):
 
 
 async def anti_link(update, context):
+    import re
     msg = update.message
     if msg and msg.text and msg.chat.type == "private" and os.environ.get("ATENDIMENTO_URL") and not re.search(r"(https?://|t.me/|www.)", msg.text):
         await _atendimento_privado(update, context)
