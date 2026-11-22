@@ -1369,7 +1369,7 @@ _AT_FALLBACK = "Opa, tive um probleminha aqui 😅 Chama a gente no WhatsApp (82
 def _atendimento_chamar(hist, uid):
     url = (os.environ.get("ATENDIMENTO_URL") or "").strip()
     cab = {"x-bot-key": os.environ.get("BOT_CHAT_KEY", "")}
-    r = requests.post(url + "?acao=chat&site=like", json={"mensagens": hist, "uid": str(uid)}, headers=cab, timeout=40)
+    r = requests.post(url + "?acao=chat&site=like", json={"mensagens": hist, "uid": str(uid), "canal": "telegram"}, headers=cab, timeout=40)
     return (r.json().get("resposta") or "").strip()
 
 
