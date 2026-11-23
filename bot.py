@@ -723,6 +723,8 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             data = resp.json()
             d = data.get("result") if isinstance(data, dict) and data.get("success") else None
+            if not d and isinstance(data, dict) and data.get("error") == "ACCOUNTS_EMPTY":
+                api_caiu = True
         except Exception:
             api_caiu = True
         if d:
