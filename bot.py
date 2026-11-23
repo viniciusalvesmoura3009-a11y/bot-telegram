@@ -696,6 +696,9 @@ async def ia_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(resp[i:i + 4000])
 
 
+_INFO_CACHE = {}
+
+
 async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
     import re as _re
     if not context.args:
@@ -705,19 +708,45 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not uid.isdigit():
         await update.message.reply_text("❌ UID inválido. Manda só números.")
         return
-    try:
-        resp = requests.get(
-            "https://freefireapis.lat/GetPlayer",
-            params={"uid": uid, "region": "BR", "formatar": "true", "images": "true", "forceRefresh": "true"},
-            timeout=30,
-        )
-        data = resp.json()
-    except Exception:
-        await update.message.reply_text("API fora do ar!")
-        return
-    d = data.get("result") if isinstance(data, dict) and data.get("success") else None
+    agora = time.time()
+    d = None
+    em_cache = _INFO_CACHE.get(uid)
+    if em_cache and agora - em_cache[0] < 300:
+        d = em_cache[1]
+    api_caiu = False
+    if d is None:
+        try:
+            resp = requests.get(
+                "https://freefireapis.lat/GetPlayer",
+                params={"uid": uid, "region": "BR", "formatar": "true", "images": "true", "forceRefresh": "true"},
+                timeout=30,
+            )
+            data = resp.json()
+            d = data.get("result") if isinstance(data, dict) and data.get("success") else None
+        except Exception:
+            api_caiu = True
+        if d:
+            _INFO_CACHE[uid] = (agora, d)
+            if len(_INFO_CACHE) > 300:
+                for k in sorted(_INFO_CACHE, key=lambda x: _INFO_CACHE[x][0])[:100]:
+                    _INFO_CACHE.pop(k, None)
     if not d:
-        await update.message.reply_text("UID inválido!")
+        try:
+            rb = requests.get(f"https://passe.soyxapasse.com.br/api/v1/consultar/{uid}", params={"token": PASSE_API_TOKEN}, timeout=30)
+            jb = rb.json()
+        except Exception:
+            jb = {}
+        if isinstance(jb, dict) and jb.get("success"):
+            await update.message.reply_text(
+                "📊 INFORMAÇÕES DO JOGADOR (modo reserva)\n\n"
+                "👤 Nick: " + str(jb.get("nickname", "?")) + "\n"
+                "🆔 ID: " + uid + "\n"
+                "📈 Level: " + str(jb.get("level", "?")) + "\n"
+                "🌍 Região: " + str(jb.get("regiao", "?")) + "\n\n"
+                "ℹ️ A consulta completa está fora do ar agora, então mostrei só o básico."
+            )
+            return
+        await update.message.reply_text("API fora do ar!" if api_caiu else "UID inválido!")
         return
     basic = d.get("basicInfo") or {}
     social = d.get("socialInfo") or {}
