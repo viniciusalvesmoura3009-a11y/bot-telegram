@@ -4796,36 +4796,26 @@ async def personagem_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
                 await query.edit_message_text("⚠️ Resultado incerto — NÃO reenvie. Verifique manualmente antes de tentar de novo.")
                 return
             if data.get("success"):
-                def _acha(d, *chaves):
-                    if isinstance(d, dict):
-                        for k in chaves:
-                            v = d.get(k)
-                            if v not in (None, "", [], {}):
-                                return v
-                        for v in d.values():
-                            r = _acha(v, *chaves)
-                            if r not in (None, ""):
-                                return r
-                    elif isinstance(d, list):
-                        for v in d:
-                            r = _acha(v, *chaves)
-                            if r not in (None, ""):
-                                return r
-                    return None
-                _fontes = [data] + [v for v in locals().values() if isinstance(v, dict) and v is not data]
-                def _busca(*chaves):
-                    for f in _fontes:
-                        r = _acha(f, *chaves)
-                        if r is not None:
-                            return r
-                    return "?"
+                _jog = data.get("jogador") if isinstance(data.get("jogador"), dict) else {}
+                _nick = _jog.get("nickname") or _jog.get("nick")
+                _nivel = _jog.get("level")
+                _regiao = _jog.get("regiao") or _jog.get("region")
+                if not (_nick and _nivel is not None and _regiao):
+                    try:
+                        _rc = await asyncio.to_thread(lambda: requests.get(f"{PASSE_BASE_URL}/api/v1/consultar/{player_id}", params={"token": PASSE_API_TOKEN}, timeout=20).json())
+                        if isinstance(_rc, dict) and _rc.get("success"):
+                            _nick = _nick or _rc.get("nickname")
+                            _nivel = _nivel if _nivel is not None else _rc.get("level")
+                            _regiao = _regiao or _rc.get("regiao")
+                    except Exception:
+                        pass
                 msg = (
                     f"✅ Personagens enviados!\n"
                     f"━━━━━━━━━━━━\n"
-                    f"👤 Nick: {_busca('nick', 'nickname', 'nome', 'name', 'player_name')}\n"
+                    f"👤 Nick: {_nick or '?'}\n"
                     f"🆔 UID: {player_id}\n"
-                    f"📈 Level: {_busca('level', 'nivel', 'lvl')}\n"
-                    f"🌍 Região: {_busca('regiao', 'region', 'server')}\n"
+                    f"📈 Level: {_nivel if _nivel is not None else '?'}\n"
+                    f"🌍 Região: {_regiao or '?'}\n"
                     f"🧑 Enviados agora: {data.get('personagens_enviados', '?')}\n"
                     f"📊 Total entregue: {data.get('total_personagens', '?')}"
                 )
