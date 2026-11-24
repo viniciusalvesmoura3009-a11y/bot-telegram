@@ -1497,7 +1497,7 @@ async def meu_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.message.from_user.id
     await update.message.reply_text("✅ Seu ID do Telegram\n🆔: <" + str(uid) + ">")
 
-app = ApplicationBuilder().token(token).connect_timeout(30).read_timeout(30).write_timeout(30).pool_timeout(30).build()
+app = ApplicationBuilder().token(token).connect_timeout(30).read_timeout(30).write_timeout(30).pool_timeout(30).concurrent_updates(True).build()
 
 GRUPO_PRINCIPAL = -1003789672313
 
