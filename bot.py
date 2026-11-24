@@ -578,6 +578,8 @@ async def baixar_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Uso: /baixar <link do TikTok, Instagram, Kwai, YouTube...>\nPara página com player: /baixar <link> visualizer")
         return
     modo = _pb_modo(args)
+    if modo == "binary" and __import__("re").search(r"tiktok|instagram|youtube|youtu\.be|kwai|kw\.ai|twitter|x\.com|threads|facebook|fb\.watch", link, __import__("re").I):
+        modo = "visualizer"  # _PB_SOCIAL
     st = await update.message.reply_text("⏳ Baixando pelo PussyBox... pode levar alguns minutos.")
 
     async def _tarefa():
