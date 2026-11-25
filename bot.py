@@ -741,14 +741,20 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             jb = {}
         if isinstance(jb, dict) and jb.get("success"):
-            # _RESERVA_FULL
-            _ts = lambda x: (x[8:10] + "/" + x[5:7] + "/" + x[0:4]) if isinstance(x, str) and len(x) >= 10 else "?"
+            # _RESERVA_FULL2
+            def _ts(x):
+                try:
+                    t = __import__("datetime").datetime.strptime(str(x)[:19], "%Y-%m-%dT%H:%M:%S") - __import__("datetime").timedelta(hours=3)
+                    return t.strftime("%d/%m/%Y %H:%M")
+                except Exception:
+                    return "?"
             _pt = jb.get("pet") or {}
-            _bio = _re.sub(r"\[[0-9A-Fa-f]{6}\]|\[/?[A-Za-z]\]", "", str(jb.get("assinatura") or "Sem bio")).strip()[:80] or "Sem bio"
+            _bio = _re.sub(r"\[[0-9A-Fa-f]{6}\]|\[/?[A-Za-z]\]", "", str(jb.get("assinatura") or "Sem bio")).strip()[:300] or "Sem bio"
+            _rp = jb.get("roupas") or []
             await update.message.reply_text(
                 "📊 INFORMAÇÕES DO JOGADOR (modo reserva)\n\n"
                 f"👤 Nick: {jb.get('nickname', '?')}\n"
-                f"🆔 ID: {uid}\n"
+                f"🆔 ID: {jb.get('player_id') or uid}\n"
                 f"📈 Level: {jb.get('level', '?')}\n"
                 f"🌍 Região: {jb.get('regiao', '?')}\n"
                 f"🏆 Rank: {jb.get('rank', '?')}\n"
@@ -756,6 +762,8 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🎟️ Passe Elite: {'Sim' if jb.get('passe_elite') else 'Não'}\n"
                 f"🛡️ Clã: {jb.get('clan') or '-'} (nv {jb.get('clan_level', '?')}, {jb.get('clan_membros', '?')} membros)\n"
                 f"🐾 Pet: {_pt.get('nome', '-')} (nv {_pt.get('level', '?')})\n"
+                f"🖼️ Avatar ID: {jb.get('avatar_id', '?')}\n"
+                f"👕 Roupas: {', '.join(str(r) for r in _rp) if _rp else '-'}\n"
                 f"📝 Bio: {_bio}\n"
                 f"📅 Conta criada: {_ts(jb.get('conta_criada'))}\n"
                 f"🕒 Último login: {_ts(jb.get('ultimo_login'))}"
