@@ -741,13 +741,24 @@ async def info_player(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             jb = {}
         if isinstance(jb, dict) and jb.get("success"):
+            # _RESERVA_FULL
+            _ts = lambda x: (x[8:10] + "/" + x[5:7] + "/" + x[0:4]) if isinstance(x, str) and len(x) >= 10 else "?"
+            _pt = jb.get("pet") or {}
+            _bio = _re.sub(r"\[[0-9A-Fa-f]{6}\]|\[/?[A-Za-z]\]", "", str(jb.get("assinatura") or "Sem bio")).strip()[:80] or "Sem bio"
             await update.message.reply_text(
                 "📊 INFORMAÇÕES DO JOGADOR (modo reserva)\n\n"
-                "👤 Nick: " + str(jb.get("nickname", "?")) + "\n"
-                "🆔 ID: " + uid + "\n"
-                "📈 Level: " + str(jb.get("level", "?")) + "\n"
-                "🌍 Região: " + str(jb.get("regiao", "?")) + "\n\n"
-                "ℹ️ A consulta completa está fora do ar agora, então mostrei só o básico."
+                f"👤 Nick: {jb.get('nickname', '?')}\n"
+                f"🆔 ID: {uid}\n"
+                f"📈 Level: {jb.get('level', '?')}\n"
+                f"🌍 Região: {jb.get('regiao', '?')}\n"
+                f"🏆 Rank: {jb.get('rank', '?')}\n"
+                f"👍 Curtidas: {jb.get('curtidas', '?')}\n"
+                f"🎟️ Passe Elite: {'Sim' if jb.get('passe_elite') else 'Não'}\n"
+                f"🛡️ Clã: {jb.get('clan') or '-'} (nv {jb.get('clan_level', '?')}, {jb.get('clan_membros', '?')} membros)\n"
+                f"🐾 Pet: {_pt.get('nome', '-')} (nv {_pt.get('level', '?')})\n"
+                f"📝 Bio: {_bio}\n"
+                f"📅 Conta criada: {_ts(jb.get('conta_criada'))}\n"
+                f"🕒 Último login: {_ts(jb.get('ultimo_login'))}"
             )
             return
         await update.message.reply_text("API fora do ar!" if api_caiu else "UID inválido!")
