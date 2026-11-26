@@ -968,6 +968,77 @@ async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"⚠️ Primeiro envio imediato falhou: " + str(resultado.get("erro", "erro desconhecido")) +
             "\n\nO autolike continua ativo e tentará no próximo ciclo."
         )
+_AUTODISP_ATIVO = False
+
+
+async def autodisparar_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):  # _AUTODISPARAR
+    global _AUTODISP_ATIVO
+    if not eh_dono(update.message.from_user.id):
+        await update.message.reply_text("❌ Você não tem permissão para usar este comando.")
+        return
+    if _AUTODISP_ATIVO:
+        await update.message.reply_text("⏳ Já tem um disparo em andamento. Aguarde terminar.")
+        return
+    lista = [u for u, i in load_auto().items() if not (isinstance(i, dict) and i.get("expirado"))]
+    if not lista:
+        await update.message.reply_text("Nenhum UID ativo no auto-like.")
+        return
+    _AUTODISP_ATIVO = True
+    st = await update.message.reply_text("🚀 Disparando para " + str(len(lista)) + " UIDs...")
+    chat = update.message.chat_id
+    bot = context.bot
+
+    async def _tarefa():
+        global _AUTODISP_ATIVO
+        ok, ja, falha = [], [], []
+        try:
+            for n, uid in enumerate(lista, 1):
+                try:
+                    r = await asyncio.to_thread(enviar_like, uid, "BR")
+                    if not isinstance(r, dict):
+                        r = {}
+                    nick = r.get("nickname")
+                    if not nick:
+                        nick = await asyncio.to_thread(_nick_de_qualquer_fonte, uid) or uid
+                    nome = str(nick) + " (" + str(uid) + ")"
+                    if r.get("sucesso"):
+                        ok.append(nome + " +" + str(r.get("likes_enviados", "?")))
+                    elif "ja_enviado" in str(r.get("erro", "")):
+                        ja.append(nome)
+                    else:
+                        falha.append(nome + " - " + str(r.get("erro", "erro"))[:40])
+                except Exception as e:
+                    print("[AUTODISPARAR] " + str(uid) + " falhou: " + type(e).__name__)
+                    falha.append(str(uid) + " - " + type(e).__name__)
+                if n % 5 == 0:
+                    try:
+                        await st.edit_text("🚀 Disparando... " + str(n) + "/" + str(len(lista)))
+                    except Exception:
+                        pass
+                await asyncio.sleep(2)
+            linhas = ["✅ AUTODISPARAR CONCLUÍDO", "",
+                      "Enviados: " + str(len(ok)) + " | Já enviado hoje: " + str(len(ja)) + " | Falhas: " + str(len(falha)), ""]
+            if ok:
+                linhas += ["✅ Enviados:"] + ["• " + x for x in ok] + [""]
+            if ja:
+                linhas += ["🔁 Já enviado:"] + ["• " + x for x in ja] + [""]
+            if falha:
+                linhas += ["❌ Falhas:"] + ["• " + x for x in falha]
+            texto = "\n".join(linhas)
+            for i in range(0, len(texto), 3900):
+                await bot.send_message(chat_id=chat, text=texto[i:i + 3900])
+        except Exception as e:
+            print("[AUTODISPARAR] erro geral: " + type(e).__name__)
+            try:
+                await bot.send_message(chat_id=chat, text="❌ Disparo interrompido: " + type(e).__name__)
+            except Exception:
+                pass
+        finally:
+            _AUTODISP_ATIVO = False
+
+    context.application.create_task(_tarefa())
+
+
 async def stop_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("Uso: /stopauto <uid>")
@@ -4698,6 +4769,7 @@ app.add_handler(CommandHandler("vendas", vendas))
 
 app.add_handler(CommandHandler("autolike", start_autolike))
 app.add_handler(CommandHandler("stopauto", stop_autolike))
+app.add_handler(CommandHandler("autodisparar", autodisparar_cmd))
 app.add_handler(CommandHandler("addautolike", addautolike))
 app.add_handler(CommandHandler("removeautolike", removeautolike))
 
