@@ -894,6 +894,37 @@ async def historicopasse_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(parte)
 
 
+def _nick_de_qualquer_fonte(uid):  # _NICK_FONTES
+    uid = str(uid)
+    try:
+        c = _INFO_CACHE.get(uid)
+        if c and isinstance(c[1], dict):
+            n = (c[1].get("basicInfo") or {}).get("nickname")
+            if n:
+                return str(n)
+    except Exception:
+        pass
+    try:
+        r = requests.get("https://freefireapis.lat/GetPlayer",
+                         params={"uid": uid, "region": "BR", "formatar": "true", "images": "true", "forceRefresh": "true"},
+                         timeout=20)
+        j = r.json()
+        d = j.get("result") if isinstance(j, dict) and j.get("success") else None
+        n = (d or {}).get("basicInfo", {}).get("nickname")
+        if n:
+            return str(n)
+    except Exception as e:
+        print("[NICK] freefireapis falhou: " + type(e).__name__)
+    try:
+        r = requests.get(f"https://passe.soyxapasse.com.br/api/v1/consultar/{uid}", params={"token": PASSE_API_TOKEN}, timeout=20)
+        j = r.json()
+        if isinstance(j, dict) and j.get("success") and j.get("nickname"):
+            return str(j["nickname"])
+    except Exception as e:
+        print("[NICK] soyxa falhou: " + type(e).__name__)
+    return None
+
+
 async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not eh_dono(update.message.from_user.id) and update.message.from_user.id not in USUARIOS_AUTO:
         await update.message.reply_text("⚠️ VOCÊ NÃO TEM PERMISSÃO PRA USA OS COMANDOS DO BOT\n\nCOMPRE O PLANO PRA PODE USAR TODOS OS COMANDOS DO BOT 🔥\n\n✅️ ENTRE EM CONTATO COM O DONO (82) 98863-1900 WHATSAPP\nE ADQUIRA JÁ SEU PLANO MENSAL OU SEMANAL")
@@ -915,7 +946,16 @@ async def start_autolike(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("\u26a0\ufe0f Erro ao salvar o autolike, tente novamente em alguns segundos.")
         return
     resultado = enviar_like(uid, region="BR")
-    nick = resultado.get("nickname", uid)
+    nick = resultado.get("nickname") or uid
+    if str(nick) == str(uid):
+        _n = await __import__("asyncio").to_thread(_nick_de_qualquer_fonte, uid)
+        if _n:
+            nick = _n
+            try:
+                uids_auto[uid]["nick"] = nick
+                await __import__("asyncio").to_thread(save_auto, uids_auto)
+            except Exception as _e:
+                print("[NICK] salvar falhou: " + type(_e).__name__)
     if resultado.get("sucesso"):
         msg2 = (
             f"✅ Auto like ativado!\n👤 Nick: {nick}\n🆔 UID: {uid}\n📅 Dias contratados: {dias}\n✨ Enviando todos os dias. 👍\n\n"
