@@ -3506,7 +3506,7 @@ async def passe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "Content-Type": "application/json",
                     "X-Bot-Name": "RebeldeFF"
                 },
-                json={"token": PASSE_API_TOKEN, "player_id": player_id, "mensagem": context.user_data.get("passe_mensagem_pendente", "")},
+                json={"token": f"{PASSE_API_TOKEN}:{PASSE_API_SENHA}", "player_id": player_id, "mensagem": context.user_data.get("passe_mensagem_pendente", "")},  # _ORDER_TOKEN_SENHA
                 timeout=30
             )
             if resp.status_code != 200 or not resp.text.strip():
